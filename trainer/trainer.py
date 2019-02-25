@@ -138,3 +138,6 @@ def train_model(model, train_loader, valid_loader, device,
     model_filename = output_dir + '/best_model.pth'
     torch.save(best_model, model_filename)
     print('Best model saved to :', model_filename)
+
+    # return score for bayesian optimization
+    return valid_accuracy
