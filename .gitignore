@@ -1,0 +1,42 @@
+# Byte-compiled / cached / optimized / DLL files #
+###################
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+
+# Packages #
+############
+# it's better to unpack these files and commit the raw source
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+*.sav
+
+# Special dirs and files #
+##########################
+build/*
+dist/*
+bin/*
+results/*
+data/*
+spyder.egg-info/
+Thumbs.db
+.DS_Store/
+spyder_crash.log
+.DS_Store
+.spyproject
+.idea/
+.cache
