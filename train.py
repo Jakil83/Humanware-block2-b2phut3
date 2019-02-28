@@ -12,6 +12,7 @@ from shutil import copyfile
 
 import torch
 
+from utils.checkpointer import CheckpointSaver
 from utils.config import cfg, cfg_from_file
 from utils.dataloader import prepare_dataloaders
 from utils.misc import mkdir_p, fix_seed
@@ -19,7 +20,6 @@ from utils.misc import mkdir_p, fix_seed
 from models.vgg import VGG
 # from models.resnet import ResNet18
 from trainer.trainer import train_model
-
 
 dir_path = (os.path.abspath(os.path.join(os.path.realpath(__file__), './.')))
 sys.path.append(dir_path)
@@ -47,6 +47,10 @@ def parse_args():
                                 path to the directory to be used for
                                 training.''')
 
+    parser.add_argument("--checkpoint_dir", type=str,
+                        default="checkpoints",
+                        help='''checkpoint_dir will be the absolute path to the directory used for checkpointing''')
+
     parser.add_argument("--dataset_dir", type=str,
                         default='data/SVHN/train/',
                         help='''dataset_dir will be the absolute path
@@ -58,21 +62,20 @@ def parse_args():
                         help='''results_dir will be the absolute
                         path to a directory where the output of
                         your training will be saved.''')
-
-    parser.add_argument("--checkpoint_path", type=str,
+    parser.add_argument("--checkpoint_name", type=str,
                         default=None,
-                        help='''path to the checkpoint to resume training''')
+                        help='''the name of the checkpoint to resume training from.  
+                        If set to None then the training will start from the beginning''')
 
     args = parser.parse_args()
     return args
 
 
-def load_config():
+def load_config(args):
     '''
     Load the config .yml file.
 
     '''
-    args = parse_args()
 
     if args.cfg is None:
         raise Exception("No config file specified.")
@@ -96,16 +99,28 @@ def load_config():
     print('Data dir: {}'.format(cfg.INPUT_DIR))
     print('Output dir: {}'.format(cfg.OUTPUT_DIR))
 
-    print('Using config:')
-    pprint.pprint(cfg)
-
-
 
 
 if __name__ == '__main__':
+    args = parse_args()
 
-    # Load the config file
-    load_config()
+    checkpoint = CheckpointSaver(args.checkpoint_dir)
+    if args.checkpoint_name:
+        model = checkpoint.load(args.checkpoint_name)
+    else:
+        # Load the config file
+        load_config(args)
+
+    print("Using the config:")
+    pprint.pprint(cfg)
+
+    # Define model architecture
+    # baseline_cnn = ConvNet(num_classes=7)
+    # baseline_cnn = BaselineCNN(num_classes=7)
+    # resnet18 = ResNet18(num_classes=7)
+    vgg19 = VGG('VGG19', num_classes=7, num_digits=11)
+    # baseline_cnn = BaselineCNN_dropout(num_classes=7, p=0.5)
+
 
     # Make the results reproductible
     fix_seed(cfg.SEED)
@@ -120,12 +135,6 @@ if __name__ == '__main__':
         sample_size=cfg.TRAIN.SAMPLE_SIZE,
         valid_split=cfg.TRAIN.VALID_SPLIT)
 
-    # Define model architecture
-    # baseline_cnn = ConvNet(num_classes=7)
-    # baseline_cnn = BaselineCNN(num_classes=7)
-    # resnet18 = ResNet18(num_classes=7)
-    vgg19 = VGG('VGG19', num_classes=7, num_digits=11)
-    # baseline_cnn = BaselineCNN_dropout(num_classes=7, p=0.5)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("Device used: ", device)
