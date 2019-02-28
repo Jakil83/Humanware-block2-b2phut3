@@ -1,10 +1,15 @@
 #!/bin/bash
+#PBS -A colosse-users
+#PBS -l nodes=1:gpus=1
+#PBS -l walltime=04:30:00
+# set the working directory to where the job is launched
+cd "${PBS_O_WORKDIR}"
 
-export ROOT_DIR=$HOME'/digit-detection'
+export ROOT_DIR=$HOME'/branch_hblk2/Humanware-block2-b2phut3/'
 export SVHN_DIR='/rap/jvb-000-aa/COURS2019/etudiants/data/humanware/SVHN'
 export DATA_DIR=$SVHN_DIR/train
 export TMP_DATA_DIR=$DATA_DIR
-export TMP_RESULTS_DIR=$DATA_DIR
+export TMP_RESULTS_DIR=$DATA_DIR/tmp_results
 export METADATA_FILENAME='/rap/jvb-000-aa/COURS2019/etudiants/data/humanware/SVHN/train_metadata.pkl'
 
 mkdir -p $TMP_DATA_DIR
@@ -34,4 +39,4 @@ s_exec python $ROOT_DIR'/train.py' --dataset_dir=$TMP_DATA_DIR --metadata_filena
 
 # echo "Cleaning up data and results..."
 # rm -r $TMP_DATA_DIR
-# rm -r $TMP_RESULTS_DIR
+# rm -r $TMP_RESULTS_DIR 

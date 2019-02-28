@@ -234,7 +234,8 @@ class ToTensor(object):
         # target is a 1x6 vector, where [0] is the number of digits and
         # targets[1:targets[0]] is the digit sequence.
         # i.e. the sequence 157 is represented by target [3,1,5,5,7,-1,-1]
-        target = -np.ones(6)
+       # target = -np.ones(6)
+        target = np.full(6, 10)
 
         # First element of target is the number of digits in the image
         # A Target of 6 represents >5 digits in the image, i.e. we have

@@ -1,0 +1,27 @@
+Train files already present
+timestamp: 2019_02_27_13_22_03
+Data dir: /rap/jvb-000-aa/COURS2019/etudiants/data/humanware/SVHN/train
+Output dir: /home/user1/branch_hblk2/Humanware-block2-b2phut3//results/SVHN_VGG19_2019_02_27_13_22_03
+Using config:
+{'CONFIG_NAME': 'VGG19',
+ 'DATASET_NAME': 'SVHN',
+ 'INPUT_DIR': '/rap/jvb-000-aa/COURS2019/etudiants/data/humanware/SVHN/train',
+ 'METADATA_FILENAME': '/rap/jvb-000-aa/COURS2019/etudiants/data/humanware/SVHN/train_metadata.pkl',
+ 'OUTPUT_DIR': '/home/user1/branch_hblk2/Humanware-block2-b2phut3//results/SVHN_VGG19_2019_02_27_13_22_03',
+ 'SEED': 1234,
+ 'TIMESTAMP': '2019_02_27_13_22_03',
+ 'TRAIN': {'BATCH_SIZE': 32,
+           'DATASET_SPLIT': 'train',
+           'LR': 0.001,
+           'MOM': 0.9,
+           'NUM_EPOCHS': 25,
+           'SAMPLE_SIZE': -1,
+           'VALID_SPLIT': 0.8}}
+pytorch/random seed: 1234
+Device used:  cuda:0
+Directory  run  Created 
+# Start training #
+
+
+
+Iterating over training data...
