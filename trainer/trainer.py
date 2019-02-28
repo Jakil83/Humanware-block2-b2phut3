@@ -4,7 +4,7 @@ import copy
 import time
 import os
 import torch
-from tqdm import tqdm
+from tqdm import tqdm, tqdm_notebook
 
 from utils.config import cfg
 from torchvision.utils import make_grid
@@ -56,6 +56,8 @@ def train_model(model, train_loader, valid_loader, device,
 
     '''
 
+    print("Learning rate is: {}".format(lr))
+
     since = time.time()
     dirName = 'run'
     if not os.path.exists(dirName):
@@ -75,7 +77,7 @@ def train_model(model, train_loader, valid_loader, device,
 
     model = model.to(device)
     train_loss_history = []
-    optimizer = torch.optim.SGD(model.parameters(), lr=cfg.TRAIN.LR, momentum=cfg.TRAIN.MOM)
+    optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=cfg.TRAIN.MOM)
     loss_ndigits = torch.nn.CrossEntropyLoss(ignore_index=10)
 
     print("# Start training #")
@@ -130,17 +132,17 @@ def train_model(model, train_loader, valid_loader, device,
             # log the layers and layers gradient histogram and distributions
             for tag, value in model.named_parameters():
                 tag = tag.replace('.', '/')
-                writer2.add_histogram('model/(train)' + tag, to_np(value), i + 1)
-                writer3.add_histogram('model/(train)' + tag + '/grad', to_np(value.grad), i + 1)
+                #writer2.add_histogram('model/(train)' + tag, to_np(value), i + 1)
+                #writer3.add_histogram('model/(train)' + tag + '/grad', to_np(value.grad), i + 1)
 
             # log the outputs given by the model (The segmentation)
-            writer4.add_image('model/(train)output', make_grid(output_seqlen.data), i + 1)
+            #writer4.add_image('model/(train)output', make_grid(output_seqlen.data), i + 1)
 
             # update progress bar status
             pbar.set_description('[TRAIN] - EPOCH %d/ %d - BATCH LOSS: %.4f(avg) '
                                  % (epoch + 1, num_epochs, train_loss / train_n_iter))
 
-        writer5.add_graph(model, inputs)
+        #writer5.add_graph(model, inputs)
 
         train_loss_history.append(train_loss / train_n_iter)
 

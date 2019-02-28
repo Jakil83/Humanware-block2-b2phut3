@@ -1,5 +1,5 @@
 from __future__ import print_function
-from tqdm import tqdm
+from tqdm import tqdm, tqdm_notebook
 import copy
 import numpy as np
 import torch

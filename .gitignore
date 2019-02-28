@@ -32,6 +32,8 @@ dist/*
 bin/*
 results/*
 tmp_results/*
+run/*
+notebooks/*
 data/*
 spyder.egg-info/
 Thumbs.db

@@ -14,7 +14,7 @@ import torch
 
 from utils.config import cfg, cfg_from_file
 from utils.dataloader import prepare_dataloaders
-from utils.misc import mkdir_p
+from utils.misc import mkdir_p, fix_seed
 # from models.baselines import BaselineCNN, ConvNet, BaselineCNN_dropout
 from models.vgg import VGG
 # from models.resnet import ResNet18
@@ -59,6 +59,10 @@ def parse_args():
                         path to a directory where the output of
                         your training will be saved.''')
 
+    parser.add_argument("--checkpoint_path", type=str,
+                        default=None,
+                        help='''path to the checkpoint to resume training''')
+
     args = parser.parse_args()
     return args
 
@@ -96,24 +100,6 @@ def load_config():
     pprint.pprint(cfg)
 
 
-def fix_seed(seed):
-    '''
-    Fix the seed.
-
-    Parameters
-    ----------
-    seed: int
-        The seed to use.
-
-    '''
-    print('pytorch/random seed: {}'.format(seed))
-    np.random.seed(seed)
-    random.seed(seed)
-    torch.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
-
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
 
 
 if __name__ == '__main__':
