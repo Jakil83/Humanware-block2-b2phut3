@@ -1,7 +1,6 @@
 from __future__ import print_function
 from tqdm import tqdm
 import copy
-import numpy as np
 import torch
 from tensorboardX import SummaryWriter
 
@@ -11,15 +10,15 @@ class Evaluator(object):
 
         self.volatile = volatile
 
-    def evaluate(self, _loader, model, multi_loss, loss_ndigits, device, output_dir):
+    def evaluate(self, _loader, model, multi_loss, device, output_dir):
 
-        writer6 = SummaryWriter('run/valid_loss')
+        writer6 = SummaryWriter('run/valid_lossr')
         writer7 = SummaryWriter('run/vseq_acc')
-        writer8 = SummaryWriter('run/vdigits_acc')
+
         valid_loss = 0
         valid_n_iter = 0
-        valid_seqlen_correct = 0
-        valid_all_digits_correct = 0
+        valid_seq_correct = 0
+
         valid_n_samples = 0
         valid_loss_history = []
         valid_accuracy_history = []
@@ -30,7 +29,7 @@ class Evaluator(object):
         model.eval()
 
         # Iterate over valid data
-        print("Iterating over validation data...")
+        print("\n\nIterating over validation data...")
         for i, batch in enumerate(tqdm(_loader)):
             # get the inputs
             inputs, targets = batch['image'], batch['target']
@@ -44,43 +43,39 @@ class Evaluator(object):
             target_digits = target_digits.to(device)
 
             # Forward
-            output_seqlen, output_digits = model(inputs)
+            outputs = model(inputs)
 
-            total_loss = multi_loss(loss_ndigits, output_seqlen, output_digits, target_ndigits, target_digits)
+            total_loss = multi_loss(outputs, target_ndigits, target_digits)
 
             # Statistics
             valid_loss += total_loss.item()
             valid_n_iter += 1
+            _, predicted_num_digits = torch.max(outputs[0].data, 1)
 
-            _, pred_seqlen = torch.max(output_seqlen.data, 1)
-            _, pred_digit1 = torch.max(output_digits[0].data, 1)
-            _, pred_digit2 = torch.max(output_digits[1].data, 1)
-            _, pred_digit3 = torch.max(output_digits[2].data, 1)
-            _, pred_digit4 = torch.max(output_digits[3].data, 1)
-            _, pred_digit5 = torch.max(output_digits[4].data, 1)
+            predicted_digits_data = []
 
-            valid_seqlen_correct += (pred_seqlen == target_ndigits).sum().item()
+            for j in range(5):
+                predicted_digits_data.append(outputs[j + 1].data)
 
-            # TODO: Make it work only with torch tensors
-            valid_digit1 = (pred_digit1 == target_digits[:, 0]).cpu().numpy().astype(bool)
-            valid_digit2 = (pred_digit2 == target_digits[:, 1]).cpu().numpy().astype(bool)
-            valid_digit3 = (pred_digit3 == target_digits[:, 2]).cpu().numpy().astype(bool)
-            valid_digit4 = (pred_digit4 == target_digits[:, 3]).cpu().numpy().astype(bool)
-            valid_digit5 = (pred_digit5 == target_digits[:, 4]).cpu().numpy().astype(bool)
+            predicted_digits_data = torch.stack(predicted_digits_data, 1)
+            _, predicted_digits = torch.max(predicted_digits_data, 2)
 
-            valid_all_digits_correct += np.logical_and.reduce(
-                (valid_digit1, valid_digit2, valid_digit3, valid_digit4, valid_digit5)).sum()
+            for k in range(predicted_digits.size(0)):
+                curated_seq = predicted_digits[k]
+                curated_seq[predicted_num_digits[k]:] = -1
+                if curated_seq.eq(target_digits[k]).sum().item() == 5:
+                    valid_seq_correct += 1
 
             valid_n_samples += target_ndigits.size(0)
 
-            # adding logg
+            # adding log
             writer6.add_scalar('Valid Loss', valid_loss / valid_n_iter, i)
-            writer7.add_scalar('Valid seq_acc', valid_seqlen_correct / valid_n_samples, i)
-            writer8.add_scalar('Valid_digit_acc', valid_all_digits_correct / valid_n_samples, i)
+            writer7.add_scalar('Valid seq_acc', valid_seq_correct / valid_n_samples, i)
 
         valid_loss_history.append(valid_loss / valid_n_iter)
-        valid_accuracy = valid_seqlen_correct / valid_n_samples
-        valid_digit_acc = valid_all_digits_correct / valid_n_samples
+        valid_accuracy = valid_seq_correct / valid_n_samples
+
+        best_model = None
 
         if valid_accuracy > valid_best_accuracy:
             valid_best_accuracy = valid_accuracy
@@ -90,5 +85,5 @@ class Evaluator(object):
             torch.save(model, model_filename)
         valid_accuracy_history.append(valid_accuracy)
 
-        return valid_loss_history, valid_accuracy, valid_digit_acc, valid_accuracy_history, best_model
+        return valid_loss_history, valid_accuracy, valid_accuracy_history, best_model
 

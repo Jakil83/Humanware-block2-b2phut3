@@ -135,10 +135,10 @@ if __name__ == '__main__':
         valid_split=cfg.TRAIN.VALID_SPLIT)
 
     # Define model architecture
-    # baseline_cnn = ConvNet(num_classes=7)
-    # baseline_cnn = BaselineCNN(num_classes=7)
-    # resnet18 = ResNet18(num_classes=7)
-    vgg19 = VGG('VGG19', num_classes=7, num_digits=11)
+    # baseline_cnn = ConvNet(num_classes_length=7, num_classes_digits=10)
+    # baseline_cnn = BaselineCNN(num_classes_length=7, num_classes_digits=10)
+    # resnet18 = ResNet18(num_classes_length=7, num_classes_digits=10)
+    vgg19 = VGG('VGG19', num_classes_length=7, num_classes_digits=10)
     # baseline_cnn = BaselineCNN_dropout(num_classes=7, p=0.5)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -148,5 +148,6 @@ if __name__ == '__main__':
                 train_loader=train_loader,
                 valid_loader=valid_loader,
                 num_epochs=cfg.TRAIN.NUM_EPOCHS,
+                lr=cfg.TRAIN.LR,
                 device=device,
                 output_dir=cfg.OUTPUT_DIR)
