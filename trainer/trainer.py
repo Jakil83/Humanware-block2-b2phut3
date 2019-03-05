@@ -12,13 +12,15 @@ from trainer.evaluator import Evaluator
 from tensorboardX import SummaryWriter
 
 
-def multi_loss(loss_ndigits, output_seqlen, output_digits, target_seqlen, target_digits):
-    loss_seqlen = loss_ndigits(output_seqlen, target_seqlen)
-    loss_digit1 = loss_ndigits(output_digits[0], target_digits[:, 0])
-    loss_digit2 = loss_ndigits(output_digits[1], target_digits[:, 1])
-    loss_digit3 = loss_ndigits(output_digits[2], target_digits[:, 2])
-    loss_digit4 = loss_ndigits(output_digits[3], target_digits[:, 3])
-    loss_digit5 = loss_ndigits(output_digits[4], target_digits[:, 4])
+def multi_loss(outputs, target_ndigits, target_digits):
+    loss_function = torch.nn.CrossEntropyLoss(ignore_index=-1)
+
+    loss_seqlen = torch.nn.CrossEntropyLoss()(outputs[0], target_ndigits)
+    loss_digit1 = loss_function(outputs[1], target_digits[:, 0])
+    loss_digit2 = loss_function(outputs[2], target_digits[:, 1])
+    loss_digit3 = loss_function(outputs[3], target_digits[:, 2])
+    loss_digit4 = loss_function(outputs[4], target_digits[:, 3])
+    loss_digit5 = loss_function(outputs[5], target_digits[:, 4])
 
     return loss_seqlen + loss_digit1 + loss_digit2 + loss_digit3 + loss_digit4 + loss_digit5
 
@@ -30,6 +32,7 @@ def to_np(x):
     :return:
     """
     return x.data.cpu().numpy()
+
 
 def train_model(model, train_loader, valid_loader, device, current_epoch = 0,
                 num_epochs=cfg.TRAIN.NUM_EPOCHS, lr=cfg.TRAIN.LR, checkpoint_dir="checkpoints/",
@@ -64,9 +67,9 @@ def train_model(model, train_loader, valid_loader, device, current_epoch = 0,
     dirName = 'run'
     if not os.path.exists(dirName):
         os.mkdir(dirName)
-        print("Directory " , dirName ,  " Created ")
+        print("Directory", dirName,  "created ")
     else:
-        print("Directory " , dirName ,  " already exists")
+        print("Directory", dirName,  "already exists")
 
     writer1 = SummaryWriter('run/train_loss')
 
@@ -80,7 +83,7 @@ def train_model(model, train_loader, valid_loader, device, current_epoch = 0,
     model = model.to(device)
     train_loss_history = []
     optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=cfg.TRAIN.MOM)
-    loss_ndigits = torch.nn.CrossEntropyLoss()
+
 
     print("# Start training #")
     for epoch in range(current_epoch, num_epochs):
@@ -92,7 +95,7 @@ def train_model(model, train_loader, valid_loader, device, current_epoch = 0,
         # model = model.train()
 
         # Iterate over train data
-        print("\n\n\nIterating over training data...")
+        print("\n\nIterating over training data...")
         # set a progress bar
         pbar = tqdm(enumerate(train_loader), total=len(train_loader))
 
@@ -112,10 +115,10 @@ def train_model(model, train_loader, valid_loader, device, current_epoch = 0,
             optimizer.zero_grad()
 
             # Forward
-            output_seqlen, output_digits = model.train()(inputs)
+            outputs = model.train()(inputs)
 
-            # loss_seqlen = loss_ndigits(output_seqlen, target_ndigits)
-            total_loss = multi_loss(loss_ndigits, output_seqlen, output_digits, target_ndigits, target_digits)
+            # Multi-task learning loss
+            total_loss = multi_loss(outputs, target_ndigits, target_digits)
 
             # Backward
             total_loss.backward()
@@ -132,13 +135,15 @@ def train_model(model, train_loader, valid_loader, device, current_epoch = 0,
             writer1.add_scalar('Train/loss', train_loss / train_n_iter, i)
 
             # log the layers and layers gradient histogram and distributions
-            for tag, value in model.named_parameters():
-                tag = tag.replace('.', '/')
-                #writer2.add_histogram('model/(train)' + tag, to_np(value), i + 1)
-                #writer3.add_histogram('model/(train)' + tag + '/grad', to_np(value.grad), i + 1)
+
+            #for tag, value in model.named_parameters():
+            #    tag = tag.replace('.', '/')
+            #    writer2.add_histogram('model/(train)' + tag, to_np(value), i + 1)
+            #    writer3.add_histogram('model/(train)' + tag + '/grad', to_np(value.grad), i + 1)
 
             # log the outputs given by the model (The segmentation)
-            #writer4.add_image('model/(train)output', make_grid(output_seqlen.data), i + 1)
+            #writer4.add_image('model/(train)output', make_grid(outputs[0].data), i + 1)
+
 
             # update progress bar status
             pbar.set_description('[TRAIN] - EPOCH %d/ %d - BATCH LOSS: %.4f(avg) '
@@ -148,8 +153,8 @@ def train_model(model, train_loader, valid_loader, device, current_epoch = 0,
 
         train_loss_history.append(train_loss / train_n_iter)
 
-        valid_loss_history, valid_accuracy, valid_digit_acc, valid_accuracy_history, best_model = \
-            Evaluator().evaluate(valid_loader, model, multi_loss, loss_ndigits, device, output_dir)
+        valid_loss_history, valid_accuracy, valid_accuracy_history, best_model = \
+            Evaluator().evaluate(valid_loader, model, multi_loss, device, output_dir)
 
         if epoch % 5 == 0:
             checkpoint.save(model, epoch)
@@ -157,8 +162,7 @@ def train_model(model, train_loader, valid_loader, device, current_epoch = 0,
         print('\nEpoch: {}/{}'.format(epoch + 1, num_epochs))
         print('\tTrain Loss: {:.4f}'.format(train_loss / train_n_iter))
         print('\tValid Loss: {:.4f}'.format(valid_loss_history[-1]))
-        print('\tValid Sequence Length Accuracy: {:.4f}'.format(valid_accuracy))
-        print('\tValid Digit Accuracy {:.4f}'.format(valid_digit_acc))
+        print('\tValid Accuracy: {:.4f}'.format(valid_accuracy))
 
 
 

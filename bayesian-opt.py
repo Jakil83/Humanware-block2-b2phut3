@@ -110,7 +110,7 @@ def train_model_opt(parameters):
         sample_size=1000,
         valid_split=cfg.TRAIN.VALID_SPLIT)
 
-    vgg19 = VGG("VGG19", num_classes=7, num_digits=11)
+    vgg19 = VGG("VGG19", num_classes_length=7, num_classes_digits=10)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("Device used: ", device)

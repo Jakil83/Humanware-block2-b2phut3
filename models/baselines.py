@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 class ConvNet(nn.Module):
 
-    def __init__(self, num_classes=2):
+    def __init__(self, num_classes_length, num_classes_digits):
         '''
         Convolutional Neural Network.
 
@@ -35,7 +35,13 @@ class ConvNet(nn.Module):
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2))
 
-        self.fc = nn.Linear(4608, num_classes)
+        self.fc_seq_length = nn.Linear(4608, num_classes_length)
+
+        self.fc_digit1 = nn.Linear(4608, num_classes_digits)
+        self.fc_digit2 = nn.Linear(4608, num_classes_digits)
+        self.fc_digit3 = nn.Linear(4608, num_classes_digits)
+        self.fc_digit4 = nn.Linear(4608, num_classes_digits)
+        self.fc_digit5 = nn.Linear(4608, num_classes_digits)
 
     def forward(self, x):
         '''
@@ -57,13 +63,14 @@ class ConvNet(nn.Module):
         out = self.layer3(out)
         # Flatten based on batch size
         out = out.reshape(out.size(0), -1)
-        out = self.fc(out)
-        return out
+
+        return [self.fc_seq_length(out), self.fc_digit1(out), self.fc_digit2(out),
+                self.fc_digit3(out), self.fc_digit4(out), self.fc_digit5(out)]
 
 
 class BaselineCNN(nn.Module):  # Achieves ~91%
 
-    def __init__(self, num_classes):
+    def __init__(self, num_classes_length, num_classes_digits):
         '''
         Placeholder CNN
         '''
@@ -75,7 +82,13 @@ class BaselineCNN(nn.Module):  # Achieves ~91%
         self.pool = nn.MaxPool2d(2, 2)
 
         self.fc1 = nn.Linear(7744, 4096)
-        self.fc2 = nn.Linear(4096, num_classes)
+        self.fc_seq_length = nn.Linear(4096, num_classes_length)
+
+        self.fc_digit1 = nn.Linear(4096, num_classes_digits)
+        self.fc_digit2 = nn.Linear(4096, num_classes_digits)
+        self.fc_digit3 = nn.Linear(4096, num_classes_digits)
+        self.fc_digit4 = nn.Linear(4096, num_classes_digits)
+        self.fc_digit5 = nn.Linear(4096, num_classes_digits)
 
     def forward(self, x):
         '''
@@ -97,16 +110,15 @@ class BaselineCNN(nn.Module):  # Achieves ~91%
         x = self.pool(F.relu(self.conv2(x)))
         # Flatten based on batch size
         x = x.view(x.size(0), -1)
-
         x = F.relu(self.fc1(x))
-        x = self.fc2(x)
 
-        return x
+        return [self.fc_seq_length(x), self.fc_digit1(x), self.fc_digit2(x),
+                self.fc_digit3(x), self.fc_digit4(x), self.fc_digit5(x)]
 
 
 class BaselineCNN_dropout(nn.Module):
 
-    def __init__(self, num_classes, p=0.5):
+    def __init__(self, num_classes_length, num_classes_digits, p=0.5):
         '''
         Placeholder CNN
         '''
@@ -120,7 +132,13 @@ class BaselineCNN_dropout(nn.Module):
         self.dropout = nn.Dropout(self.p)
 
         self.fc1 = nn.Linear(7744, 4096)
-        self.fc2 = nn.Linear(4096, num_classes)
+        self.fc_seq_length = nn.Linear(4096, num_classes_length)
+
+        self.fc_digit1 = nn.Linear(4096, num_classes_digits)
+        self.fc_digit2 = nn.Linear(4096, num_classes_digits)
+        self.fc_digit3 = nn.Linear(4096, num_classes_digits)
+        self.fc_digit4 = nn.Linear(4096, num_classes_digits)
+        self.fc_digit5 = nn.Linear(4096, num_classes_digits)
 
     def forward(self, x):
         '''
@@ -148,6 +166,6 @@ class BaselineCNN_dropout(nn.Module):
 
         x = F.relu(self.fc1(x))
         x = self.dropout(x)
-        x = self.fc2(x)
 
-        return x
+        return [self.fc_seq_length(x), self.fc_digit1(x), self.fc_digit2(x),
+                self.fc_digit3(x), self.fc_digit4(x), self.fc_digit5(x)]

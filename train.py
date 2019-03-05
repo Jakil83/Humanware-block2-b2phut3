@@ -121,7 +121,7 @@ if __name__ == '__main__':
     # baseline_cnn = ConvNet(num_classes=7)
     # baseline_cnn = BaselineCNN(num_classes=7)
     # resnet18 = ResNet18(num_classes=7)
-    vgg19 = VGG('VGG19', num_classes=7, num_digits=11)
+    vgg19 = VGG('VGG19', num_classes_length=7, num_classes_digits=10)
     # baseline_cnn = BaselineCNN_dropout(num_classes=7, p=0.5)
 
     # Prepare data

@@ -15,29 +15,22 @@ cfg = {
 
 
 class VGG(nn.Module):
-    def __init__(self, vgg_name, num_classes, num_digits):
+    def __init__(self, vgg_name, num_classes_length, num_classes_digits):
         super(VGG, self).__init__()
+        print("Init VGG")
         self.features = self._make_layers(cfg[vgg_name])
-        self.classifier = nn.Linear(512, num_classes)
-
-        self.classifier_digit1 = nn.Linear(512, num_digits)
-        self.classifier_digit2 = nn.Linear(512, num_digits)
-        self.classifier_digit3 = nn.Linear(512, num_digits)
-        self.classifier_digit4 = nn.Linear(512, num_digits)
-        self.classifier_digit5 = nn.Linear(512, num_digits)
+        self.classifier_length = nn.Linear(512, num_classes_length)
+        self.classifier_digit1 = nn.Linear(512, num_classes_digits)
+        self.classifier_digit2 = nn.Linear(512, num_classes_digits)
+        self.classifier_digit3 = nn.Linear(512, num_classes_digits)
+        self.classifier_digit4 = nn.Linear(512, num_classes_digits)
+        self.classifier_digit5 = nn.Linear(512, num_classes_digits)
 
     def forward(self, x):
         out = self.features(x)
         out = out.view(out.size(0), -1)
-        out_seqlen = self.classifier(out)
-        out_digits = []
-        out_digits.append(self.classifier_digit1(out))
-        out_digits.append(self.classifier_digit2(out))
-        out_digits.append(self.classifier_digit3(out))
-        out_digits.append(self.classifier_digit4(out))
-        out_digits.append(self.classifier_digit5(out))
-
-        return out_seqlen, out_digits
+        return [self.classifier_length(out), self.classifier_digit1(out), self.classifier_digit2(out),
+                self.classifier_digit3(out), self.classifier_digit4(out), self.classifier_digit5(out)]
 
     def _make_layers(self, cfg):
         layers = []
@@ -55,9 +48,9 @@ class VGG(nn.Module):
 
 
 def test():
-    net = VGG('VGG11', num_classes=7, num_digits=11)
+    net = VGG('VGG19', num_classes_digits=10, num_classes_length=7)
     x = torch.randn(2, 3, 32, 32)
     y = net(x)
-    print(y.size())
+    print(y)
 
-# test()
+#test()

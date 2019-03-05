@@ -5,11 +5,11 @@
 # set the working directory to where the job is launched
 cd "${PBS_O_WORKDIR}"
 
-export ROOT_DIR=$HOME'/branch_hblk2/Humanware-block2-b2phut3/'
+export ROOT_DIR=$HOME'/blk2_humanware/'
 export SVHN_DIR='/rap/jvb-000-aa/COURS2019/etudiants/data/humanware/SVHN'
 export DATA_DIR=$SVHN_DIR/train
 export TMP_DATA_DIR=$DATA_DIR
-export TMP_RESULTS_DIR=$DATA_DIR/tmp_results
+export TMP_RESULTS_DIR=$ROOT_DIR/tmp_results
 export METADATA_FILENAME='/rap/jvb-000-aa/COURS2019/etudiants/data/humanware/SVHN/train_metadata.pkl'
 
 mkdir -p $TMP_DATA_DIR
