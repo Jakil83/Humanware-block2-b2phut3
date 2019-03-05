@@ -42,7 +42,9 @@ def parse_args():
                         default=None,
                         help='''optional config file,
                              e.g. config/base_config.yml''')
-
+    parser.add_argument("--checkpoint_dir", type=str,
+                        default="checkpoints",
+                        help='''checkpoint_dir will be the absolute path to the directory used for checkpointing''')
     parser.add_argument("--metadata_filename", type=str,
                         default='data/SVHN/train_metadata.pkl',
                         help='''metadata_filename will be the absolute
