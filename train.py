@@ -87,6 +87,7 @@ def load_config(args):
     print('timestamp: {}'.format(timestamp))
 
     cfg.TIMESTAMP = timestamp
+    cfg.CHECKPOINT_DIR = args.checkpoint_dir
     cfg.INPUT_DIR = args.dataset_dir
     cfg.METADATA_FILENAME = args.metadata_filename
     cfg.OUTPUT_DIR = os.path.join(
@@ -100,12 +101,11 @@ def load_config(args):
     print('Output dir: {}'.format(cfg.OUTPUT_DIR))
 
 
-
 if __name__ == '__main__':
     args = parse_args()
 
-    checkpoint = CheckpointSaver(args.checkpoint_dir)
     if args.checkpoint_name:
+        checkpoint = CheckpointSaver(args.checkpoint_dir)
         model = checkpoint.load(args.checkpoint_name)
     else:
         # Load the config file
@@ -114,16 +114,15 @@ if __name__ == '__main__':
     print("Using the config:")
     pprint.pprint(cfg)
 
+    # Make the results reproductible
+    fix_seed(cfg.SEED)
+
     # Define model architecture
     # baseline_cnn = ConvNet(num_classes=7)
     # baseline_cnn = BaselineCNN(num_classes=7)
     # resnet18 = ResNet18(num_classes=7)
     vgg19 = VGG('VGG19', num_classes=7, num_digits=11)
     # baseline_cnn = BaselineCNN_dropout(num_classes=7, p=0.5)
-
-
-    # Make the results reproductible
-    fix_seed(cfg.SEED)
 
     # Prepare data
     (train_loader,
@@ -135,13 +134,24 @@ if __name__ == '__main__':
         sample_size=cfg.TRAIN.SAMPLE_SIZE,
         valid_split=cfg.TRAIN.VALID_SPLIT)
 
-
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("Device used: ", device)
 
-    train_model(vgg19,
-                train_loader=train_loader,
-                valid_loader=valid_loader,
-                num_epochs=cfg.TRAIN.NUM_EPOCHS,
-                device=device,
-                output_dir=cfg.OUTPUT_DIR)
+    if args.checkpoint_name:
+        train_model(model,
+                    train_loader=train_loader,
+                    valid_loader=valid_loader,
+                    current_epoch=cfg.TRAIN.CURRENT_EPOCH,
+                    num_epochs=cfg.TRAIN.NUM_EPOCHS,
+                    device=device,
+                    checkpoint_dir=cfg.CHECKPOINT_DIR,
+                    output_dir=cfg.OUTPUT_DIR)
+    else:
+        train_model(vgg19,
+                    train_loader=train_loader,
+                    valid_loader=valid_loader,
+                    num_epochs=cfg.TRAIN.NUM_EPOCHS,
+                    device=device,
+                    checkpoint_dir=cfg.CHECKPOINT_DIR,
+                    output_dir=cfg.OUTPUT_DIR)
+

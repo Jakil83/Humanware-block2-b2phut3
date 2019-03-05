@@ -6,8 +6,8 @@ import os
 import torch
 from tqdm import tqdm, tqdm_notebook
 
+from utils.checkpointer import CheckpointSaver
 from utils.config import cfg
-from torchvision.utils import make_grid
 from trainer.evaluator import Evaluator
 from tensorboardX import SummaryWriter
 
@@ -31,8 +31,8 @@ def to_np(x):
     """
     return x.data.cpu().numpy()
 
-def train_model(model, train_loader, valid_loader, device,
-                num_epochs=cfg.TRAIN.NUM_EPOCHS, lr=cfg.TRAIN.LR,
+def train_model(model, train_loader, valid_loader, device, current_epoch = 0,
+                num_epochs=cfg.TRAIN.NUM_EPOCHS, lr=cfg.TRAIN.LR, checkpoint_dir="checkpoints/",
                 output_dir=None):
     '''
     Training loop.
@@ -58,6 +58,8 @@ def train_model(model, train_loader, valid_loader, device,
 
     print("Learning rate is: {}".format(lr))
 
+    checkpoint = CheckpointSaver(checkpoint_dir)
+
     since = time.time()
     dirName = 'run'
     if not os.path.exists(dirName):
@@ -78,10 +80,10 @@ def train_model(model, train_loader, valid_loader, device,
     model = model.to(device)
     train_loss_history = []
     optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=cfg.TRAIN.MOM)
-    loss_ndigits = torch.nn.CrossEntropyLoss(ignore_index=10)
+    loss_ndigits = torch.nn.CrossEntropyLoss()
 
     print("# Start training #")
-    for epoch in range(num_epochs):
+    for epoch in range(current_epoch, num_epochs):
 
         train_loss = 0
         train_n_iter = 0
@@ -149,11 +151,16 @@ def train_model(model, train_loader, valid_loader, device,
         valid_loss_history, valid_accuracy, valid_digit_acc, valid_accuracy_history, best_model = \
             Evaluator().evaluate(valid_loader, model, multi_loss, loss_ndigits, device, output_dir)
 
+        if epoch % 5 == 0:
+            checkpoint.save(model, epoch)
+
         print('\nEpoch: {}/{}'.format(epoch + 1, num_epochs))
         print('\tTrain Loss: {:.4f}'.format(train_loss / train_n_iter))
         print('\tValid Loss: {:.4f}'.format(valid_loss_history[-1]))
         print('\tValid Sequence Length Accuracy: {:.4f}'.format(valid_accuracy))
         print('\tValid Digit Accuracy {:.4f}'.format(valid_digit_acc))
+
+
 
     time_elapsed = time.time() - since
 

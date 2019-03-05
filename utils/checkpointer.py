@@ -24,6 +24,8 @@ class CheckpointSaver:
         with open(config_path, 'w') as config_file:
             yaml.dump(cfg, config_file, default_flow_style=False)
 
+        print("Checkpointing new model ...")
+
 
     def load(self, checkpoint_name):
         model_path = os.path.join(self.checkpoint_dir, "{0}.pth".format(checkpoint_name))
