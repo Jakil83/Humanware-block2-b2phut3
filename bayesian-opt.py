@@ -42,20 +42,21 @@ def parse_args():
                         default=None,
                         help='''optional config file,
                              e.g. config/base_config.yml''')
+
+    parser.add_argument("--metadata_filename", nargs='+', type=str,
+                        default=['data/SVHN/train_metadata.pkl', 'data/SVHN/extra_metadata.pkl'],
+                        help='''metadata_filename will be the absolute
+                                paths to the metadata files of the data (order is [train, extra] if both are provided).''')
+
     parser.add_argument("--checkpoint_dir", type=str,
                         default="checkpoints",
                         help='''checkpoint_dir will be the absolute path to the directory used for checkpointing''')
-    parser.add_argument("--metadata_filename", type=str,
-                        default='data/SVHN/train_metadata.pkl',
-                        help='''metadata_filename will be the absolute
-                                path to the directory to be used for
-                                training.''')
 
-    parser.add_argument("--dataset_dir", type=str,
-                        default='data/SVHN/train/',
+    parser.add_argument("--dataset_dir", nargs='+', type=str,
+                        default=['data/SVHN/train', 'data/SVHN/extra'],
                         help='''dataset_dir will be the absolute path
-                                to the directory to be used for
-                                training''')
+                                 to the data to be used for
+                                 training (order is [train, extra] if both are provided).''')
 
     parser.add_argument("--results_dir", type=str,
                         default='results/',

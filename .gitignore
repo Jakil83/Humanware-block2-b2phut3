@@ -34,9 +34,7 @@ results/*
 tmp_results/*
 checkpoints/*
 run/*
-notebooks/*
 data/*
-run/*
 spyder.egg-info/
 Thumbs.db
 .DS_Store/

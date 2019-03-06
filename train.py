@@ -41,27 +41,27 @@ def parse_args():
                         help='''optional config file,
                              e.g. config/base_config.yml''')
 
-    parser.add_argument("--metadata_filename", type=str,
-                        default='data/SVHN/train_metadata.pkl',
+    parser.add_argument("--metadata_filename", nargs='+', type=str,
+                        default=['data/SVHN/train_metadata.pkl', 'data/SVHN/extra_metadata.pkl'],
                         help='''metadata_filename will be the absolute
-                                path to the directory to be used for
-                                training.''')
+                                paths to the metadata files of the data (order is [train, extra] if both are provided).''')
 
     parser.add_argument("--checkpoint_dir", type=str,
                         default="checkpoints",
                         help='''checkpoint_dir will be the absolute path to the directory used for checkpointing''')
 
-    parser.add_argument("--dataset_dir", type=str,
-                        default='data/SVHN/train/',
+    parser.add_argument("--dataset_dir", nargs='+', type=str,
+                        default=['data/SVHN/train', 'data/SVHN/extra'],
                         help='''dataset_dir will be the absolute path
-                                to the directory to be used for
-                                training''')
+                                 to the data to be used for
+                                 training (order is [train, extra] if both are provided).''')
 
     parser.add_argument("--results_dir", type=str,
                         default='results/',
                         help='''results_dir will be the absolute
                         path to a directory where the output of
                         your training will be saved.''')
+
     parser.add_argument("--checkpoint_name", type=str,
                         default=None,
                         help='''the name of the checkpoint to resume training from.  
@@ -117,22 +117,23 @@ if __name__ == '__main__':
     # Make the results reproductible
     fix_seed(cfg.SEED)
 
-    # Define model architecture
-    # baseline_cnn = ConvNet(num_classes=7)
-    # baseline_cnn = BaselineCNN(num_classes=7)
-    # resnet18 = ResNet18(num_classes=7)
-    vgg19 = VGG('VGG19', num_classes_length=7, num_classes_digits=10)
-    # baseline_cnn = BaselineCNN_dropout(num_classes=7, p=0.5)
-
     # Prepare data
     (train_loader,
      valid_loader) = prepare_dataloaders(
-        dataset_split=cfg.TRAIN.DATASET_SPLIT,
+        dataset_split=cfg.TRAIN_EXTRA.DATASET_SPLIT,
         dataset_path=cfg.INPUT_DIR,
         metadata_filename=cfg.METADATA_FILENAME,
-        batch_size=cfg.TRAIN.BATCH_SIZE,
-        sample_size=cfg.TRAIN.SAMPLE_SIZE,
-        valid_split=cfg.TRAIN.VALID_SPLIT)
+        batch_size=cfg.TRAIN_EXTRA.BATCH_SIZE,
+        sample_size=cfg.TRAIN_EXTRA.SAMPLE_SIZE,
+        valid_split=cfg.TRAIN_EXTRA.VALID_SPLIT,
+        stratified=cfg.TRAIN_EXTRA.STRATIFIED)
+
+    # Define model architecture
+    # baseline_cnn = ConvNet(num_classes_length=7, num_classes_digits=10)
+    # baseline_cnn = BaselineCNN(num_classes_length=7, num_classes_digits=10)
+    # resnet18 = ResNet18(num_classes_length=7, num_classes_digits=10)
+    vgg19 = VGG('VGG19', num_classes_length=7, num_classes_digits=10)
+    # baseline_cnn = BaselineCNN_dropout(num_classes=7, p=0.5)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("Device used: ", device)
@@ -141,8 +142,9 @@ if __name__ == '__main__':
         train_model(model,
                     train_loader=train_loader,
                     valid_loader=valid_loader,
-                    current_epoch=cfg.TRAIN.CURRENT_EPOCH,
-                    num_epochs=cfg.TRAIN.NUM_EPOCHS,
+                    current_epoch=cfg.TRAIN_EXTRA.CURRENT_EPOCH,
+                    num_epochs=cfg.TRAIN_EXTRA.NUM_EPOCHS,
+                    lr=cfg.TRAIN_EXTRA.LR,
                     device=device,
                     checkpoint_dir=cfg.CHECKPOINT_DIR,
                     output_dir=cfg.OUTPUT_DIR)
@@ -150,7 +152,8 @@ if __name__ == '__main__':
         train_model(vgg19,
                     train_loader=train_loader,
                     valid_loader=valid_loader,
-                    num_epochs=cfg.TRAIN.NUM_EPOCHS,
+                    num_epochs=cfg.TRAIN_EXTRA.NUM_EPOCHS,
+                    lr=cfg.TRAIN.LR,
                     device=device,
                     checkpoint_dir=cfg.CHECKPOINT_DIR,
                     output_dir=cfg.OUTPUT_DIR)
