@@ -123,7 +123,7 @@ def train_model_opt(parameters):
         dataset_path=cfg.INPUT_DIR,
         metadata_filename=cfg.METADATA_FILENAME,
         batch_size=cfg.TRAIN_EXTRA.BATCH_SIZE,
-        sample_size=[1000, 1000],
+        sample_size=cfg.TRAIN_EXTRA.SAMPLE_SIZE,
         valid_split=cfg.TRAIN_EXTRA.VALID_SPLIT)
 
     vgg19 = VGG("VGG19", num_classes_length=7, num_classes_digits=10)
@@ -135,8 +135,8 @@ def train_model_opt(parameters):
     return -train_model(vgg19,
                         train_loader=train_loader,
                         valid_loader=valid_loader,
-                        # num_epochs=cfg.TRAIN.NUM_EPOCHS,
-                        num_epochs=2,
+                        num_epochs=cfg.TRAIN.NUM_EPOCHS,
+                        #num_epochs=2,
                         device=device,
                         lr=lr,
                         output_dir=cfg.OUTPUT_DIR)
@@ -152,7 +152,8 @@ if __name__ == '__main__':
     fix_seed(cfg.SEED)
 
     space = [skopt.space.Real(10 ** -5, 10 ** 0, "log-uniform", name='lr'),
-             skopt.space.Categorical(["VGG11", "VGG13", "VGG16", "VGG19"])]
+             #skopt.space.Categorical(["VGG11", "VGG13", "VGG16", "VGG19"])
+             ]
 
     checkpoint_path = os.path.join(args.checkpoint_dir, "bayesian_checkpoint.pkl")
     checkpoint_saver = CheckpointSaverCallback(checkpoint_path, compress=9)
