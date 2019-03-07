@@ -63,6 +63,10 @@ def parse_args():
                         path to a directory where the output of
                         your training will be saved.''')
 
+    parser.add_argument("--num_calls", type=int,
+                        default=10,
+                        help='''number of iteration to be performed by the bayesian optimization.  It should any number larger than 10''')
+
     parser.add_argument("--bayesian_checkpoint_name", type=str,
                         default=None,
                         help='''the name of the checkpoint to resume the bayesian optimization from.  
@@ -119,7 +123,7 @@ def train_model_opt(parameters):
         dataset_path=cfg.INPUT_DIR,
         metadata_filename=cfg.METADATA_FILENAME,
         batch_size=cfg.TRAIN_EXTRA.BATCH_SIZE,
-        sample_size=[1000,1000],
+        sample_size=[1000, 1000],
         valid_split=cfg.TRAIN_EXTRA.VALID_SPLIT)
 
     vgg19 = VGG("VGG19", num_classes_length=7, num_classes_digits=10)
@@ -129,13 +133,13 @@ def train_model_opt(parameters):
 
     lr = parameters[0]
     return -train_model(vgg19,
-                           train_loader=train_loader,
-                           valid_loader=valid_loader,
-                           # num_epochs=cfg.TRAIN.NUM_EPOCHS,
-                           num_epochs=2,
-                           device=device,
-                           lr=lr,
-                           output_dir=cfg.OUTPUT_DIR)
+                        train_loader=train_loader,
+                        valid_loader=valid_loader,
+                        # num_epochs=cfg.TRAIN.NUM_EPOCHS,
+                        num_epochs=2,
+                        device=device,
+                        lr=lr,
+                        output_dir=cfg.OUTPUT_DIR)
 
 
 if __name__ == '__main__':
@@ -151,17 +155,16 @@ if __name__ == '__main__':
              skopt.space.Categorical(["VGG11", "VGG13", "VGG16", "VGG19"])]
 
     checkpoint_path = os.path.join(args.checkpoint_dir, "bayesian_checkpoint.pkl")
-    CheckpointSaverCallback(checkpoint_path, compress=9)
+    checkpoint_saver = CheckpointSaverCallback(checkpoint_path, compress=9)
     if args.bayesian_checkpoint_name:
         res_gp = skopt.load(checkpoint_path)
-        print("Resuming from iteration: {}\n\n".format(len(res_gp.x0)))
-        skopt.gp_minimize(train_model_opt, space, x0=res_gp.x0, y0=res_gp.y0, n_calls=10,
+        print("Resuming from iteration: {}\n\n".format(len(res_gp.x_iters)))
+        skopt.gp_minimize(train_model_opt, space, x0=res_gp.x_iters, y0=res_gp.func_vals, n_calls=args.num_calls,
                           callback=[CheckpointSaverCallback], random_state=0)
     else:
         print("Starting bayesian optimization\n\n")
-        res_gp = skopt.gp_minimize(train_model_opt, space, n_calls=10, callback=[CheckpointSaverCallback],
+        res_gp = skopt.gp_minimize(train_model_opt, space, n_calls=args.num_calls, callback=[checkpoint_saver],
                                    random_state=0)
-
 
     print("Best accuracy: {0}".format(-res_gp.fun))
     print("Best parameters: {0}".format(res_gp.x))
