@@ -1,5 +1,5 @@
 from __future__ import print_function
-from tqdm import tqdm
+from tqdm import tqdm, tqdm_notebook
 import copy
 import torch
 from tensorboardX import SummaryWriter
@@ -80,9 +80,6 @@ class Evaluator(object):
         if valid_accuracy > valid_best_accuracy:
             valid_best_accuracy = valid_accuracy
             best_model = copy.deepcopy(model)
-            print('Checkpointing new model...')
-            model_filename = output_dir + '/checkpoint.pth'
-            torch.save(model, model_filename)
         valid_accuracy_history.append(valid_accuracy)
 
         return valid_loss_history, valid_accuracy, valid_accuracy_history, best_model

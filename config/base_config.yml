@@ -22,3 +22,14 @@ TRAIN_EXTRA:
   NUM_EPOCHS: 25
   LR: 0.001
   MOM: 0.9
+
+
+TRAIN_EXTRA:
+  DATASET_SPLIT: 'train+extra'
+  VALID_SPLIT: [0.8, 0.8] # [VALID_SPLIT_TRAIN, VALID_SPLIT_EXTRA]
+  SAMPLE_SIZE: [-1, -1] # [SAMPLE_SIZE_TRAIN, SAMPLE_SIZE_EXTRA] Number of samples to use (for debugging purposes), set to -1 to use the entire dataset
+  STRATIFIED: False
+  BATCH_SIZE: 32
+  NUM_EPOCHS: 25
+  LR: 0.001
+  MOM: 0.9

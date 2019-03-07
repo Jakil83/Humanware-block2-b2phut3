@@ -2,7 +2,11 @@ import os
 
 import errno
 import pickle
+import numpy as np
+import random
 
+
+import torch
 
 def mkdir_p(path):
     '''
@@ -51,3 +55,23 @@ def load_obj(filename):
     '''
     with open(filename, 'rb') as f:
         return pickle.load(f)
+
+
+def fix_seed(seed):
+    '''
+    Fix the seed.
+
+    Parameters
+    ----------
+    seed: int
+        The seed to use.
+
+    '''
+    print('pytorch/random seed: {}'.format(seed))
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)

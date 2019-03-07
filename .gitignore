@@ -31,8 +31,10 @@ build/*
 dist/*
 bin/*
 results/*
-data/*
+tmp_results/*
+checkpoints/*
 run/*
+data/*
 spyder.egg-info/
 Thumbs.db
 .DS_Store/

@@ -12,14 +12,14 @@ from shutil import copyfile
 
 import torch
 
+from utils.checkpointer import CheckpointSaver
 from utils.config import cfg, cfg_from_file
 from utils.dataloader import prepare_dataloaders
-from utils.misc import mkdir_p
+from utils.misc import mkdir_p, fix_seed
 # from models.baselines import BaselineCNN, ConvNet, BaselineCNN_dropout
 from models.vgg import VGG
 # from models.resnet import ResNet18
 from trainer.trainer import train_model
-
 
 dir_path = (os.path.abspath(os.path.join(os.path.realpath(__file__), './.')))
 sys.path.append(dir_path)
@@ -46,11 +46,15 @@ def parse_args():
                         help='''metadata_filename will be the absolute
                                 paths to the metadata files of the data (order is [train, extra] if both are provided).''')
 
+    parser.add_argument("--checkpoint_dir", type=str,
+                        default="checkpoints",
+                        help='''checkpoint_dir will be the absolute path to the directory used for checkpointing''')
+
     parser.add_argument("--dataset_dir", nargs='+', type=str,
                         default=['data/SVHN/train', 'data/SVHN/extra'],
                         help='''dataset_dir will be the absolute path
-                                to the data to be used for
-                                training (order is [train, extra] if both are provided).''')
+                                 to the data to be used for
+                                 training (order is [train, extra] if both are provided).''')
 
     parser.add_argument("--results_dir", type=str,
                         default='results/',
@@ -58,16 +62,20 @@ def parse_args():
                         path to a directory where the output of
                         your training will be saved.''')
 
+    parser.add_argument("--checkpoint_name", type=str,
+                        default=None,
+                        help='''the name of the checkpoint to resume training from.  
+                        If set to None then the training will start from the beginning''')
+
     args = parser.parse_args()
     return args
 
 
-def load_config():
+def load_config(args):
     '''
     Load the config .yml file.
 
     '''
-    args = parse_args()
 
     if args.cfg is None:
         raise Exception("No config file specified.")
@@ -91,34 +99,19 @@ def load_config():
     print('Data dir: {}'.format(cfg.INPUT_DIR))
     print('Output dir: {}'.format(cfg.OUTPUT_DIR))
 
-    print('Using config:')
-    pprint.pprint(cfg)
-
-
-def fix_seed(seed):
-    '''
-    Fix the seed.
-
-    Parameters
-    ----------
-    seed: int
-        The seed to use.
-
-    '''
-    print('pytorch/random seed: {}'.format(seed))
-    np.random.seed(seed)
-    random.seed(seed)
-    torch.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
-
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
-
 
 if __name__ == '__main__':
+    args = parse_args()
 
-    # Load the config file
-    load_config()
+    if args.checkpoint_name:
+        checkpoint = CheckpointSaver(args.checkpoint_dir)
+        model = checkpoint.load(args.checkpoint_name)
+    else:
+        # Load the config file
+        load_config(args)
+
+    print("Using the config:")
+    pprint.pprint(cfg)
 
     # Make the results reproductible
     fix_seed(cfg.SEED)
@@ -144,11 +137,23 @@ if __name__ == '__main__':
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("Device used: ", device)
 
-    train_model(vgg19,
-                train_loader=train_loader,
-                valid_loader=valid_loader,
-                num_epochs=cfg.TRAIN.NUM_EPOCHS,
-                lr=cfg.TRAIN.LR,
-                device=device,
-                output_dir=cfg.OUTPUT_DIR)
+    if args.checkpoint_name:
+        train_model(model,
+                    train_loader=train_loader,
+                    valid_loader=valid_loader,
+                    current_epoch=cfg.TRAIN_EXTRA.CURRENT_EPOCH,
+                    num_epochs=cfg.TRAIN_EXTRA.NUM_EPOCHS,
+                    lr=cfg.TRAIN_EXTRA.LR,
+                    device=device,
+                    checkpoint_dir=cfg.CHECKPOINT_DIR,
+                    output_dir=cfg.OUTPUT_DIR)
+    else:
+        train_model(vgg19,
+                    train_loader=train_loader,
+                    valid_loader=valid_loader,
+                    num_epochs=cfg.TRAIN_EXTRA.NUM_EPOCHS,
+                    lr=cfg.TRAIN.LR,
+                    device=device,
+                    checkpoint_dir=cfg.CHECKPOINT_DIR,
+                    output_dir=cfg.OUTPUT_DIR)
 
