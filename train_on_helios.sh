@@ -32,8 +32,8 @@ else
     echo "Train files already present"
 fi
 
-s_exec python $ROOT_DIR'/train.py' --dataset_dir=$TMP_DATA_DIR --metadata_filename=$METADATA_FILENAME --results_dir=$ROOT_DIR/results --cfg $ROOT_DIR/config/base_config.yml
-
+#s_exec python $ROOT_DIR'/train.py' --dataset_dir=$TMP_DATA_DIR --metadata_filename=$METADATA_FILENAME --results_dir=$ROOT_DIR/results --cfg $ROOT_DIR/config/base_config.yml
+s_exec python $ROOT_DIR'/train.py'  --results_dir=$ROOT_DIR/results --cfg $ROOT_DIR/config/base_config.yml
 # echo "Copying files to local hard drive..."
 # cp -r $TMP_RESULTS_DIR $ROOT_DIR
 

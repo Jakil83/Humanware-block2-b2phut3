@@ -14,6 +14,7 @@ __C.SEED = 1234
 
 # Training options
 __C.TRAIN = edict()
+
 __C.TRAIN.DATASET_SPLIT = 'train'
 __C.TRAIN.VALID_SPLIT = 0.8
 __C.TRAIN.SAMPLE_SIZE = 100
@@ -22,6 +23,13 @@ __C.TRAIN.NUM_EPOCHS = 5
 __C.TRAIN.LR = 0.001
 __C.TRAIN.MOM = 0.9
 
+__C.TRAIN_EXTRA = edict()
+__C.TRAIN_EXTRA.VALID_SPLIT = [0.8, 0.8]
+__C.TRAIN_EXTRA.SAMPLE_SIZE = [100, 100]
+__C.TRAIN_EXTRA.BATCH_SIZE = 32
+__C.TRAIN_EXTRA.NUM_EPOCHS = 5
+__C.TRAIN_EXTRA.LR = 0.001
+__C.TRAIN_EXTRA.MOM = 0.9
 
 def _merge_a_into_b(a, b):
     '''

@@ -1,24 +1,32 @@
 import torch
+import skopt
 import os
 import yaml
-from easydict import EasyDict
-
+import pprint
 from utils.misc import mkdir_p
 from utils.config import cfg, cfg_from_file
+
 
 class CheckpointSaver:
     def __init__(self, checkpoint_dir ):
         self.checkpoint_dir = checkpoint_dir
 
     def save(self, model, epoch):
-
+        """
+        Save the model and the config
+        :param model: The PyTorch model
+        :param epoch: The current epoch
+        """
         mkdir_p(self.checkpoint_dir)
 
         checkpoint_path = os.path.join(self.checkpoint_dir, "checkpoint_epoch{}.pth".format(epoch))
         torch.save(model, checkpoint_path)
 
         # Augment the current config file with useful parameters for resuming training
+        # Save current epoch in train and train_extra because we do not know which will be used
         cfg.TRAIN.CURRENT_EPOCH = epoch
+        cfg.TRAIN_EXTRA.CURRENT_EPOCH = epoch
+
 
         config_path = os.path.join(self.checkpoint_dir, "checkpoint_epoch{}.yml".format(epoch))
         with open(config_path, 'w') as config_file:
@@ -28,6 +36,13 @@ class CheckpointSaver:
 
 
     def load(self, checkpoint_name):
+        """
+        Load the model and the config based on the checkpoint name
+        The config is also loaded and can be accessed with the cfg object
+        :param checkpoint_name: The name of the checkpoint without the file extension
+        :return: The PyTorch model
+        """
+
         model_path = os.path.join(self.checkpoint_dir, "{0}.pth".format(checkpoint_name))
         config_path = os.path.join(self.checkpoint_dir, "{0}.yml".format(checkpoint_name))
 
@@ -41,3 +56,33 @@ class CheckpointSaver:
         cfg_from_file(config_path)
 
         return model
+
+
+class CheckpointSaverCallback(object):
+    """
+    Save current state after each iteration with `skopt.dump`.
+    Callback from skopt
+
+    Example usage:
+        import skopt
+
+        checkpoint_callback = skopt.callbacks.CheckpointSaver("./result.pkl")
+        skopt.gp_minimize(obj_fun, dims, callback=[checkpoint_callback])
+
+    Parameters
+    ----------
+    * `checkpoint_path`: location where checkpoint will be saved to;
+    * `dump_options`: options to pass on to `skopt.dump`, like `compress=9`
+    """
+    def __init__(self, checkpoint_path, **dump_options):
+        self.checkpoint_path = checkpoint_path
+        self.dump_options = dump_options
+
+    def __call__(self, res):
+        """
+        Parameters
+        ----------
+        * `res` [`OptimizeResult`, scipy object]:
+            The optimization as a OptimizeResult object.
+        """
+        skopt.dump(res, self.checkpoint_path, **self.dump_options)
