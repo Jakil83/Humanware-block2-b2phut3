@@ -90,6 +90,7 @@ def load_config(args):
     cfg.CHECKPOINT_DIR = args.checkpoint_dir
     cfg.INPUT_DIR = args.dataset_dir
     cfg.METADATA_FILENAME = args.metadata_filename
+    cfg.CHECKPOINT_DIR = args.checkpoint_dir
     cfg.OUTPUT_DIR = os.path.join(
         args.results_dir,
         '%s_%s_%s' % (cfg.DATASET_NAME, cfg.CONFIG_NAME, timestamp))

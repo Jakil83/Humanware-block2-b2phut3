@@ -59,8 +59,6 @@ def train_model(model, train_loader, valid_loader, device, current_epoch = 0,
 
     '''
 
-    print("Learning rate is: {}".format(lr))
-
     checkpoint = CheckpointSaver(checkpoint_dir)
 
     since = time.time()

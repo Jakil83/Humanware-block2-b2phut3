@@ -14,13 +14,12 @@ import torch
 
 import skopt
 
-
 from utils.config import cfg, cfg_from_file
 from utils.dataloader import prepare_dataloaders
 from utils.misc import mkdir_p, fix_seed
 # from models.baselines import BaselineCNN, ConvNet, BaselineCNN_dropout
 from models.vgg import VGG
-# from models.resnet import ResNet18
+from utils.checkpointer import CheckpointSaver, CheckpointSaverCallback
 from trainer.trainer import train_model
 
 dir_path = (os.path.abspath(os.path.join(os.path.realpath(__file__), './.')))
@@ -64,16 +63,30 @@ def parse_args():
                         path to a directory where the output of
                         your training will be saved.''')
 
+    parser.add_argument("--num_calls", type=int,
+                        default=10,
+                        help='''number of iteration to be performed by the bayesian optimization.  It should any number larger than 10''')
+
+    parser.add_argument("--bayesian_checkpoint_name", type=str,
+                        default=None,
+                        help='''the name of the checkpoint to resume the bayesian optimization from.  
+                        If set to None then the bayesian optimization will start from the beginning''')
+
+    # parser.add_argument("--checkpoint_name", type=str,
+    #                     default=None,
+    #                     help='''the name of the checkpoint to resume training from.
+    #                     If set to None then the training will start from the beginning''')
+
+
     args = parser.parse_args()
     return args
 
 
-def load_config():
+def load_config(args):
     '''
     Load the config .yml file.
 
     '''
-    args = parse_args()
 
     if args.cfg is None:
         raise Exception("No config file specified.")
@@ -102,43 +115,57 @@ def load_config():
 
 
 def train_model_opt(parameters):
-    lr = parameters[0]
-    print(parameters)
+    print("Training model with parameters: {}\n\n\n".format(parameters))
+
     (train_loader,
      valid_loader) = prepare_dataloaders(
-        dataset_split=cfg.TRAIN.DATASET_SPLIT,
+        dataset_split=cfg.TRAIN_EXTRA.DATASET_SPLIT,
         dataset_path=cfg.INPUT_DIR,
         metadata_filename=cfg.METADATA_FILENAME,
-        batch_size=cfg.TRAIN.BATCH_SIZE,
-        sample_size=1000,
-        valid_split=cfg.TRAIN.VALID_SPLIT)
+        batch_size=cfg.TRAIN_EXTRA.BATCH_SIZE,
+        sample_size=cfg.TRAIN_EXTRA.SAMPLE_SIZE,
+        valid_split=cfg.TRAIN_EXTRA.VALID_SPLIT)
 
     vgg19 = VGG("VGG19", num_classes_length=7, num_classes_digits=10)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("Device used: ", device)
-    return -   train_model(vgg19,
-                           train_loader=train_loader,
-                           valid_loader=valid_loader,
-                           # num_epochs=cfg.TRAIN.NUM_EPOCHS,
-                           num_epochs=1,
-                           device=device,
-                           lr=lr,
-                           output_dir=cfg.OUTPUT_DIR)
+
+    lr = parameters[0]
+    return -train_model(vgg19,
+                        train_loader=train_loader,
+                        valid_loader=valid_loader,
+                        num_epochs=cfg.TRAIN.NUM_EPOCHS,
+                        #num_epochs=2,
+                        device=device,
+                        lr=lr,
+                        output_dir=cfg.OUTPUT_DIR)
 
 
 if __name__ == '__main__':
+    args = parse_args()
+
     # Load the config file
-    load_config()
+    load_config(args)
 
     # Make the results reproductible
     fix_seed(cfg.SEED)
 
     space = [skopt.space.Real(10 ** -5, 10 ** 0, "log-uniform", name='lr'),
-             skopt.space.Categorical(["VGG11", "VGG13", "VGG16", "VGG19"])]
+             #skopt.space.Categorical(["VGG11", "VGG13", "VGG16", "VGG19"])
+             ]
 
-    res_gp = skopt.gp_minimize(train_model_opt, space, n_calls=10,
-                               random_state=0)
+    checkpoint_path = os.path.join(args.checkpoint_dir, "bayesian_checkpoint.pkl")
+    checkpoint_saver = CheckpointSaverCallback(checkpoint_path, compress=9)
+    if args.bayesian_checkpoint_name:
+        res_gp = skopt.load(checkpoint_path)
+        print("Resuming from iteration: {}\n\n".format(len(res_gp.x_iters)))
+        skopt.gp_minimize(train_model_opt, space, x0=res_gp.x_iters, y0=res_gp.func_vals, n_calls=args.num_calls,
+                          callback=[CheckpointSaverCallback], random_state=0)
+    else:
+        print("Starting bayesian optimization\n\n")
+        res_gp = skopt.gp_minimize(train_model_opt, space, n_calls=args.num_calls, callback=[checkpoint_saver],
+                                   random_state=0)
 
-    print("Best score: {0}".format(-res_gp.fun))
-    print("Best lr: {0}".format(res_gp.x[0]))
+    print("Best accuracy: {0}".format(-res_gp.fun))
+    print("Best parameters: {0}".format(res_gp.x))
