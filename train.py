@@ -87,6 +87,7 @@ def load_config(args):
     print('timestamp: {}'.format(timestamp))
 
     cfg.TIMESTAMP = timestamp
+    cfg.CHECKPOINT_DIR = args.checkpoint_dir
     cfg.INPUT_DIR = args.dataset_dir
     cfg.METADATA_FILENAME = args.metadata_filename
     cfg.CHECKPOINT_DIR = args.checkpoint_dir
