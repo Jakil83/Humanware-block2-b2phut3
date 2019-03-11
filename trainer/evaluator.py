@@ -82,5 +82,5 @@ class Evaluator(object):
             best_model = copy.deepcopy(model)
         valid_accuracy_history.append(valid_accuracy)
 
-        return valid_loss_history, valid_accuracy, valid_accuracy_history, best_model
+        return valid_loss_history, valid_best_accuracy, valid_accuracy_history, best_model
 

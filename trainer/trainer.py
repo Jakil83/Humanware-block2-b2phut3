@@ -7,7 +7,6 @@ import torch
 from tqdm import tqdm, tqdm_notebook
 
 from utils.checkpointer import CheckpointSaver
-from utils.config import cfg
 from trainer.evaluator import Evaluator
 from tensorboardX import SummaryWriter
 
@@ -34,9 +33,16 @@ def to_np(x):
     return x.data.cpu().numpy()
 
 
-def train_model(model, train_loader, valid_loader, device, current_epoch = 0,
-                num_epochs=cfg.TRAIN.NUM_EPOCHS, lr=cfg.TRAIN.LR, checkpoint_dir="checkpoints/",
-                output_dir=None):
+def train_model(model, train_loader, valid_loader, device,cfg):
+
+    current_epoch = cfg.TRAIN.CURRENT_EPOCH
+    num_epochs = cfg.TRAIN.NUM_EPOCHS
+    lr = cfg.TRAIN.LR
+    checkpoint_dir = cfg.CHECKPOINT_DIR
+    output_dir = cfg.OUTPUT_DIR
+    momentum = cfg.TRAIN.MOM
+    weight_decay = cfg.TRAIN.WEIGHT_DECAY
+
     '''
     Training loop.
 
@@ -80,17 +86,14 @@ def train_model(model, train_loader, valid_loader, device, current_epoch = 0,
 
     model = model.to(device)
     train_loss_history = []
-    optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=cfg.TRAIN.MOM)
-
-
+    optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=3,
+                                                           verbose=True, min_lr=1e-5)
     print("# Start training #")
     for epoch in range(current_epoch, num_epochs):
 
         train_loss = 0
         train_n_iter = 0
-
-        # Set model to train mode
-        # model = model.train()
 
         # Iterate over train data
         print("\n\nIterating over training data...")
@@ -109,14 +112,14 @@ def train_model(model, train_loader, valid_loader, device, current_epoch = 0,
             target_digits = targets[:, 1:].long()
             target_digits = target_digits.to(device)
 
-            # Zero the gradient buffer
-            optimizer.zero_grad()
-
             # Forward
             outputs = model.train()(inputs)
 
             # Multi-task learning loss
             total_loss = multi_loss(outputs, target_ndigits, target_digits)
+
+           # Zero the gradient buffer
+            optimizer.zero_grad()
 
             # Backward
             total_loss.backward()
@@ -154,15 +157,15 @@ def train_model(model, train_loader, valid_loader, device, current_epoch = 0,
         valid_loss_history, valid_accuracy, valid_accuracy_history, best_model = \
             Evaluator().evaluate(valid_loader, model, multi_loss, device, output_dir)
 
+        scheduler.step(valid_loss_history[-1])
+
         if epoch % 5 == 0:
-            checkpoint.save(model, epoch)
+            checkpoint.save(model, epoch, cfg=cfg)
 
         print('\nEpoch: {}/{}'.format(epoch + 1, num_epochs))
         print('\tTrain Loss: {:.4f}'.format(train_loss / train_n_iter))
         print('\tValid Loss: {:.4f}'.format(valid_loss_history[-1]))
         print('\tValid Accuracy: {:.4f}'.format(valid_accuracy))
-
-
 
     time_elapsed = time.time() - since
 

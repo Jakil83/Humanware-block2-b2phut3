@@ -1,7 +1,6 @@
 from __future__ import print_function
 import os
 import sys
-
 import argparse
 import dateutil.tz
 import datetime
@@ -9,11 +8,9 @@ import numpy as np
 import pprint
 import random
 from shutil import copyfile
-
 import torch
-
 from utils.checkpointer import CheckpointSaver
-from utils.config import cfg, cfg_from_file
+from utils.config import cfg_from_file
 from utils.dataloader import prepare_dataloaders
 from utils.misc import mkdir_p, fix_seed
 # from models.baselines import BaselineCNN, ConvNet, BaselineCNN_dropout
@@ -26,7 +23,7 @@ sys.path.append(dir_path)
 
 
 def parse_args():
-    '''
+    """
     Parser for the arguments.
 
     Returns
@@ -34,7 +31,7 @@ def parse_args():
     args : obj
         The arguments.
 
-    '''
+    """
     parser = argparse.ArgumentParser(description='Train a CNN network')
     parser.add_argument('--cfg', type=str,
                         default=None,
@@ -72,15 +69,15 @@ def parse_args():
 
 
 def load_config(args):
-    '''
+    """
     Load the config .yml file.
 
-    '''
+    """
 
     if args.cfg is None:
         raise Exception("No config file specified.")
 
-    cfg_from_file(args.cfg)
+    cfg = cfg_from_file(args.cfg)
 
     now = datetime.datetime.now(dateutil.tz.tzlocal())
     timestamp = now.strftime('%Y_%m_%d_%H_%M_%S')
@@ -100,6 +97,7 @@ def load_config(args):
 
     print('Data dir: {}'.format(cfg.INPUT_DIR))
     print('Output dir: {}'.format(cfg.OUTPUT_DIR))
+    return cfg
 
 
 if __name__ == '__main__':
@@ -110,7 +108,7 @@ if __name__ == '__main__':
         model = checkpoint.load(args.checkpoint_name)
     else:
         # Load the config file
-        load_config(args)
+       cfg= load_config(args)
 
     print("Using the config:")
     pprint.pprint(cfg)
@@ -120,14 +118,7 @@ if __name__ == '__main__':
 
     # Prepare data
     (train_loader,
-     valid_loader) = prepare_dataloaders(
-        dataset_split=cfg.TRAIN_EXTRA.DATASET_SPLIT,
-        dataset_path=cfg.INPUT_DIR,
-        metadata_filename=cfg.METADATA_FILENAME,
-        batch_size=cfg.TRAIN_EXTRA.BATCH_SIZE,
-        sample_size=cfg.TRAIN_EXTRA.SAMPLE_SIZE,
-        valid_split=cfg.TRAIN_EXTRA.VALID_SPLIT,
-        stratified=cfg.TRAIN_EXTRA.STRATIFIED)
+     valid_loader) = prepare_dataloaders(cfg)
 
     # Define model architecture
     # baseline_cnn = ConvNet(num_classes_length=7, num_classes_digits=10)
@@ -141,21 +132,14 @@ if __name__ == '__main__':
 
     if args.checkpoint_name:
         train_model(model,
+                    cfg=cfg,
                     train_loader=train_loader,
                     valid_loader=valid_loader,
-                    current_epoch=cfg.TRAIN_EXTRA.CURRENT_EPOCH,
-                    num_epochs=cfg.TRAIN_EXTRA.NUM_EPOCHS,
-                    lr=cfg.TRAIN_EXTRA.LR,
-                    device=device,
-                    checkpoint_dir=cfg.CHECKPOINT_DIR,
-                    output_dir=cfg.OUTPUT_DIR)
+                    device=device)
     else:
         train_model(vgg19,
+                    cfg=cfg,
                     train_loader=train_loader,
                     valid_loader=valid_loader,
-                    num_epochs=cfg.TRAIN_EXTRA.NUM_EPOCHS,
-                    lr=cfg.TRAIN.LR,
-                    device=device,
-                    checkpoint_dir=cfg.CHECKPOINT_DIR,
-                    output_dir=cfg.OUTPUT_DIR)
+                    device=device)
 

@@ -3,7 +3,7 @@ from matplotlib import patches
 
 
 def visualize_sample(sample, outer_bbox=None):
-    '''
+    """
     Utility function to allow visualization of samples.
 
     Parameters
@@ -14,7 +14,7 @@ def visualize_sample(sample, outer_bbox=None):
         Tuple of coordinates (x1, x2, y1, y2) to bounding box surrounding
         all bboxes of digits in an image. Optional
 
-    '''
+    """
 
     img = sample['image']
     boxes = sample['metadata']['boxes']

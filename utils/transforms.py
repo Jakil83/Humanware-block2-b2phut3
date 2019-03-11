@@ -6,14 +6,13 @@ from utils.boxes import extract_outer_box
 
 class FirstCrop(object):
 
-    '''
+    """
     Crop the image such that all bounding boxes +pad_size% in x,y are
     contained in the image.
-
-    '''
+    """
 
     def __init__(self, pad_size):
-        '''
+        """
 
         Parameters
         ----------
@@ -21,11 +20,11 @@ class FirstCrop(object):
             Percentage of padding around the bounding boxe containg
             all digits. Should be in range [0, 1].
 
-        '''
+        """
         self.pad_size = pad_size
 
     def __call__(self, sample):
-        '''
+        """
 
         Parameters
         ----------
@@ -38,7 +37,7 @@ class FirstCrop(object):
             Modified image and associated metadata corresponding to the
             transformation.
 
-        '''
+        """
 
         image = sample['image']
         labels = sample['metadata']['labels']
@@ -68,7 +67,7 @@ class FirstCrop(object):
 class Rescale(object):
 
     def __init__(self, output_size):
-        '''
+        """
         Rescale the image in a sample to a given size.s
 
         Parameters
@@ -78,12 +77,12 @@ class Rescale(object):
             If int, smaller of image edges is matched to output_size keeping
             aspect ratio the same.
 
-        '''
+        """
         assert isinstance(output_size, (int, tuple))
         self.output_size = output_size
 
     def __call__(self, sample):
-        '''
+        """
 
         Parameters
         ----------
@@ -96,7 +95,7 @@ class Rescale(object):
             Modified image and associated metadata corresponding to the
             transformation.
 
-        '''
+        """
         image = sample['image']
         boxes = sample['metadata']['boxes']
         labels = sample['metadata']['labels']
@@ -130,7 +129,7 @@ class Rescale(object):
 class RandomCrop(object):
 
     def __init__(self, output_size):
-        '''
+        """
         Crop randomly the image in a sample.
 
         Parameters
@@ -139,7 +138,7 @@ class RandomCrop(object):
             Desired output size. If int, square crop
             is made.
 
-        '''
+        """
         assert isinstance(output_size, (int, tuple))
         if isinstance(output_size, int):
             self.output_size = (output_size, output_size)
@@ -148,7 +147,7 @@ class RandomCrop(object):
             self.output_size = output_size
 
     def __call__(self, sample):
-        '''
+        """
 
         Parameters
         ----------
@@ -161,7 +160,7 @@ class RandomCrop(object):
             Modified image and associated metadata corresponding to the
             transformation.
 
-        '''
+        """
 
         image = sample['image']
         labels = sample['metadata']['labels']
@@ -195,7 +194,7 @@ class ToTensor(object):
     """Convert ndarrays in sample to Tensors."""
 
     def __call__(self, sample):
-        '''
+        """
 
         Parameters
         ----------
@@ -209,7 +208,7 @@ class ToTensor(object):
             transformation to be compatible with pytorch. Contains the keys
             ['image', 'target', 'filename']
 
-        '''
+        """
 
         image = sample['image']
         labels = sample['metadata']['labels']

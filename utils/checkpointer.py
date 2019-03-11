@@ -4,14 +4,15 @@ import os
 import yaml
 import pprint
 from utils.misc import mkdir_p
-from utils.config import cfg, cfg_from_file
+from utils.config import cfg_from_file
+
 
 
 class CheckpointSaver:
     def __init__(self, checkpoint_dir ):
         self.checkpoint_dir = checkpoint_dir
 
-    def save(self, model, epoch):
+    def save(self, model, epoch, cfg):
         """
         Save the model and the config
         :param model: The PyTorch model
@@ -25,7 +26,6 @@ class CheckpointSaver:
         # Augment the current config file with useful parameters for resuming training
         # Save current epoch in train and train_extra because we do not know which will be used
         cfg.TRAIN.CURRENT_EPOCH = epoch
-        cfg.TRAIN_EXTRA.CURRENT_EPOCH = epoch
 
 
         config_path = os.path.join(self.checkpoint_dir, "checkpoint_epoch{}.yml".format(epoch))
