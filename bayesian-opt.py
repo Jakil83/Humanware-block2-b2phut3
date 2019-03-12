@@ -91,7 +91,7 @@ def load_config(args):
 
     now = datetime.datetime.now(dateutil.tz.tzlocal())
     timestamp = now.strftime('%Y_%m_%d_%H_%M_%S')
-    print('timestamp: {}'.format(timestamp))
+    # print('timestamp: {}'.format(timestamp))
 
     cfg.TIMESTAMP = timestamp
     cfg.INPUT_DIR = args.dataset_dir
@@ -104,17 +104,21 @@ def load_config(args):
     mkdir_p(cfg.OUTPUT_DIR)
     copyfile(args.cfg, os.path.join(cfg.OUTPUT_DIR, 'config.yml'))
 
-    print('Data dir: {}'.format(cfg.INPUT_DIR))
-    print('Output dir: {}'.format(cfg.OUTPUT_DIR))
+    # print('Data dir: {}'.format(cfg.INPUT_DIR))
+    # print('Output dir: {}'.format(cfg.OUTPUT_DIR))
 
-    print('Using config:')
-    pprint.pprint(cfg)
+    # print('Using config:')
+    # pprint.pprint(cfg)
     return cfg
 
 
-def train_model_opt(cfg):
+def train_model_opt(parameters):
 
-    # print("Training model with parameters: {}\n\n\n".format(cfg))
+    print("Training model with parameters: {}\n\n\n".format(parameters))
+    args = parse_args()
+
+    # Load the config file
+    cfg = load_config(args)
 
     (train_loader,
      valid_loader) = prepare_dataloaders(cfg)
@@ -123,6 +127,8 @@ def train_model_opt(cfg):
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("Device used: ", device)
+    cfg.TRAIN.LR = parameters[0]
+    cfg.TRAIN.BATCH_SIZE = parameters[1]
 
     return train_model(vgg19,
                        cfg=cfg,
@@ -135,13 +141,13 @@ if __name__ == '__main__':
     args = parse_args()
 
     # Load the config file
-    cfg = load_config(args)
+    # cfg = load_config(args)
 
     # Make the results reproductible
-    fix_seed(cfg.SEED)
+    # fix_seed(cfg.SEED)
 
     space = [skopt.space.Real(10 ** -5, 10 ** 0, "log-uniform", name='lr'),
-             # skopt.space.Categorical(["VGG11", "VGG13", "VGG16", "VGG19"])
+             skopt.space.Integer(16,128 ,name='batch_size')
              ]
 
     checkpoint_path = os.path.join(args.checkpoint_dir, "bayesian_checkpoint.pkl")
@@ -149,11 +155,11 @@ if __name__ == '__main__':
     if args.bayesian_checkpoint_name:
         res_gp = skopt.load(checkpoint_path)
         print("Resuming from iteration: {}\n\n".format(len(res_gp.x_iters)))
-        skopt.gp_minimize(train_model_opt(cfg), space, x0=res_gp.x_iters, y0=res_gp.func_vals, n_calls=args.num_calls,
+        skopt.gp_minimize(train_model_opt, space, x0=res_gp.x_iters, y0=res_gp.func_vals, n_calls=args.num_calls,
                           callback=[CheckpointSaverCallback], random_state=0)
     else:
         print("Starting bayesian optimization\n\n")
-        res_gp = skopt.gp_minimize(train_model_opt(cfg), space, n_calls=args.num_calls, callback=[checkpoint_saver],
+        res_gp = skopt.gp_minimize(train_model_opt, space, n_calls=args.num_calls, callback=[checkpoint_saver],
                                    random_state=0)
 
     print("Best accuracy: {0}".format(-res_gp.fun))

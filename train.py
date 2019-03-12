@@ -107,11 +107,13 @@ if __name__ == '__main__':
         checkpoint = CheckpointSaver(args.checkpoint_dir)
         model = checkpoint.load(args.checkpoint_name)
     else:
-        # Load the config file
-       cfg= load_config(args)
 
-    print("Using the config:")
-    pprint.pprint(cfg)
+        # Load the config file
+        cfg = load_config(args)
+        model = VGG('VGG19', num_classes_length=7, num_classes_digits=10)
+
+    # print("Using the config:")
+    # pprint.pprint(cfg)
 
     # Make the results reproductible
     fix_seed(cfg.SEED)
@@ -124,22 +126,13 @@ if __name__ == '__main__':
     # baseline_cnn = ConvNet(num_classes_length=7, num_classes_digits=10)
     # baseline_cnn = BaselineCNN(num_classes_length=7, num_classes_digits=10)
     # resnet18 = ResNet18(num_classes_length=7, num_classes_digits=10)
-    vgg19 = VGG('VGG19', num_classes_length=7, num_classes_digits=10)
     # baseline_cnn = BaselineCNN_dropout(num_classes=7, p=0.5)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("Device used: ", device)
 
-    if args.checkpoint_name:
-        train_model(model,
-                    cfg=cfg,
-                    train_loader=train_loader,
-                    valid_loader=valid_loader,
-                    device=device)
-    else:
-        train_model(vgg19,
-                    cfg=cfg,
-                    train_loader=train_loader,
-                    valid_loader=valid_loader,
-                    device=device)
-
+    train_model(model,
+                cfg=cfg,
+                train_loader=train_loader,
+                valid_loader=valid_loader,
+                device=device)

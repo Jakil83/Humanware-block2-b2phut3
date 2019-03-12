@@ -210,7 +210,6 @@ class FullSVHNDataset(data.Dataset):
 
 
 def prepare_dataloaders(cfg):
-    print('cfg dataloader {}'.format(cfg))
 
      # Prepare data
     dataset_split = cfg.TRAIN.DATASET_SPLIT

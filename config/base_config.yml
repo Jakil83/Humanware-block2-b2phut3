@@ -7,10 +7,10 @@ TRAIN:
   DATASET_SPLIT: 'train+extra'
   VALID_SPLIT: [0.8, 1]
   CURRENT_EPOCH: 0
-  SAMPLE_SIZE: [-1,-1] # Number of samples to use (for debugging purposes), set to -1 to use the entire dataset
+  SAMPLE_SIZE: [-1,0] # Number of samples to use (for debugging purposes), set to -1 to use the entire dataset
   BATCH_SIZE: 32
   STRATIFIED: False
-  NUM_EPOCHS: 10
+  NUM_EPOCHS: 5
   LR: 0.001
   MOM: 0.9
   SHUFFLE: False
