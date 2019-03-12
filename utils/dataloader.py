@@ -209,13 +209,19 @@ class FullSVHNDataset(data.Dataset):
         return sample
 
 
-def prepare_dataloaders(dataset_split,
-                        dataset_path,
-                        metadata_filename,
-                        batch_size=32,
-                        sample_size=-1,
-                        valid_split=0.8,
-                        stratified=False):
+def prepare_dataloaders(cfg):
+    print('cfg dataloader {}'.format(cfg))
+
+     # Prepare data
+    dataset_split = cfg.TRAIN.DATASET_SPLIT
+    dataset_path = cfg.INPUT_DIR
+    metadata_filename = cfg.METADATA_FILENAME
+    batch_size = cfg.TRAIN.BATCH_SIZE
+    sample_size = cfg.TRAIN.SAMPLE_SIZE
+    valid_split = cfg.TRAIN.VALID_SPLIT
+    stratified = cfg.TRAIN.STRATIFIED
+    shuffle = cfg.TRAIN.SHUFFLE
+
     '''
     Utility function to prepare dataloaders for training.
 
@@ -253,8 +259,6 @@ def prepare_dataloaders(dataset_split,
     '''
 
     assert dataset_split in ['train', 'test', 'extra', 'train+extra'], "check dataset_split"
-
-
 
     #  dataset_path = datadir / dataset_split
 
@@ -295,7 +299,7 @@ def prepare_dataloaders(dataset_split,
         # Prepare a train and validation dataloader
         train_loader = DataLoader(dataset,
                                   batch_size=batch_size,
-                                  shuffle=False,
+                                  shuffle=shuffle,
                                   num_workers=4,
                                   sampler=train_sampler)
 
@@ -376,7 +380,7 @@ def prepare_dataloaders(dataset_split,
         # Prepare a train and validation dataloader
         train_loader = DataLoader(dataset,
                                   batch_size=batch_size,
-                                  shuffle=False,
+                                  shuffle=shuffle,
                                   num_workers=4,
                                   sampler=train_sampler)
 
@@ -387,7 +391,6 @@ def prepare_dataloaders(dataset_split,
                                   sampler=valid_sampler)
 
         return train_loader, valid_loader
-
 
     elif dataset_split in ['test']:
 

@@ -1,7 +1,6 @@
 from __future__ import print_function
 import os
 import sys
-
 import argparse
 import dateutil.tz
 import datetime
@@ -9,12 +8,9 @@ import numpy as np
 import pprint
 import random
 from shutil import copyfile
-
 import torch
-
 import skopt
-
-from utils.config import cfg, cfg_from_file
+from utils.config import cfg_from_file
 from utils.dataloader import prepare_dataloaders
 from utils.misc import mkdir_p, fix_seed
 # from models.baselines import BaselineCNN, ConvNet, BaselineCNN_dropout
@@ -27,7 +23,7 @@ sys.path.append(dir_path)
 
 
 def parse_args():
-    '''
+    """
     Parser for the arguments.
 
     Returns
@@ -35,7 +31,7 @@ def parse_args():
     args : obj
         The arguments.
 
-    '''
+    """
     parser = argparse.ArgumentParser(description='Train a CNN network')
     parser.add_argument('--cfg', type=str,
                         default=None,
@@ -65,7 +61,8 @@ def parse_args():
 
     parser.add_argument("--num_calls", type=int,
                         default=10,
-                        help='''number of iteration to be performed by the bayesian optimization.  It should any number larger than 10''')
+                        help='''number of iteration to be performed by the bayesian optimization.
+                          It should any number larger than 10''')
 
     parser.add_argument("--bayesian_checkpoint_name", type=str,
                         default=None,
@@ -77,21 +74,20 @@ def parse_args():
     #                     help='''the name of the checkpoint to resume training from.
     #                     If set to None then the training will start from the beginning''')
 
-
     args = parser.parse_args()
     return args
 
 
 def load_config(args):
-    '''
+    """
     Load the config .yml file.
 
-    '''
+    """
 
     if args.cfg is None:
         raise Exception("No config file specified.")
 
-    cfg_from_file(args.cfg)
+    cfg = cfg_from_file(args.cfg)
 
     now = datetime.datetime.now(dateutil.tz.tzlocal())
     timestamp = now.strftime('%Y_%m_%d_%H_%M_%S')
@@ -99,6 +95,7 @@ def load_config(args):
 
     cfg.TIMESTAMP = timestamp
     cfg.INPUT_DIR = args.dataset_dir
+    cfg.CHECKPOINT_DIR = args.checkpoint_dir
     cfg.METADATA_FILENAME = args.metadata_filename
     cfg.OUTPUT_DIR = os.path.join(
         args.results_dir,
@@ -112,47 +109,39 @@ def load_config(args):
 
     print('Using config:')
     pprint.pprint(cfg)
+    return cfg
 
 
-def train_model_opt(parameters):
-    print("Training model with parameters: {}\n\n\n".format(parameters))
+def train_model_opt(cfg):
+
+    # print("Training model with parameters: {}\n\n\n".format(cfg))
 
     (train_loader,
-     valid_loader) = prepare_dataloaders(
-        dataset_split=cfg.TRAIN_EXTRA.DATASET_SPLIT,
-        dataset_path=cfg.INPUT_DIR,
-        metadata_filename=cfg.METADATA_FILENAME,
-        batch_size=cfg.TRAIN_EXTRA.BATCH_SIZE,
-        sample_size=cfg.TRAIN_EXTRA.SAMPLE_SIZE,
-        valid_split=cfg.TRAIN_EXTRA.VALID_SPLIT)
+     valid_loader) = prepare_dataloaders(cfg)
 
     vgg19 = VGG("VGG19", num_classes_length=7, num_classes_digits=10)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("Device used: ", device)
 
-    lr = parameters[0]
-    return -train_model(vgg19,
-                        train_loader=train_loader,
-                        valid_loader=valid_loader,
-                        num_epochs=cfg.TRAIN.NUM_EPOCHS,
-                        #num_epochs=2,
-                        device=device,
-                        lr=lr,
-                        output_dir=cfg.OUTPUT_DIR)
+    return train_model(vgg19,
+                       cfg=cfg,
+                       train_loader=train_loader,
+                       valid_loader=valid_loader,
+                       device=device)
 
 
 if __name__ == '__main__':
     args = parse_args()
 
     # Load the config file
-    load_config(args)
+    cfg = load_config(args)
 
     # Make the results reproductible
     fix_seed(cfg.SEED)
 
     space = [skopt.space.Real(10 ** -5, 10 ** 0, "log-uniform", name='lr'),
-             #skopt.space.Categorical(["VGG11", "VGG13", "VGG16", "VGG19"])
+             # skopt.space.Categorical(["VGG11", "VGG13", "VGG16", "VGG19"])
              ]
 
     checkpoint_path = os.path.join(args.checkpoint_dir, "bayesian_checkpoint.pkl")
@@ -160,11 +149,11 @@ if __name__ == '__main__':
     if args.bayesian_checkpoint_name:
         res_gp = skopt.load(checkpoint_path)
         print("Resuming from iteration: {}\n\n".format(len(res_gp.x_iters)))
-        skopt.gp_minimize(train_model_opt, space, x0=res_gp.x_iters, y0=res_gp.func_vals, n_calls=args.num_calls,
+        skopt.gp_minimize(train_model_opt(cfg), space, x0=res_gp.x_iters, y0=res_gp.func_vals, n_calls=args.num_calls,
                           callback=[CheckpointSaverCallback], random_state=0)
     else:
         print("Starting bayesian optimization\n\n")
-        res_gp = skopt.gp_minimize(train_model_opt, space, n_calls=args.num_calls, callback=[checkpoint_saver],
+        res_gp = skopt.gp_minimize(train_model_opt(cfg), space, n_calls=args.num_calls, callback=[checkpoint_saver],
                                    random_state=0)
 
     print("Best accuracy: {0}".format(-res_gp.fun))
