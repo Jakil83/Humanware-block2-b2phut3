@@ -1,8 +1,10 @@
 from __future__ import print_function
-from tqdm import tqdm, tqdm_notebook
-import copy
+from tqdm import tqdm
+
 import torch
 from tensorboardX import SummaryWriter
+
+import numpy as np
 
 
 class Evaluator(object):
@@ -10,27 +12,29 @@ class Evaluator(object):
 
         self.volatile = volatile
 
-    def evaluate(self, _loader, model, multi_loss, device, output_dir, epoch):
+    @staticmethod
+    def evaluate(epoch, _loader, model, multi_loss, device):
 
-        writer6 = SummaryWriter('run/valid_lossr')
-        writer7 = SummaryWriter('run/vseq_acc')
+        writer4 = SummaryWriter('run/valid_loss')
+        writer5 = SummaryWriter('run/valid_acc')
 
         valid_loss = 0
         valid_n_iter = 0
-        valid_seq_correct = 0
-
         valid_n_samples = 0
-        valid_loss_history = []
-        valid_accuracy_history = []
-        valid_best_accuracy = 0
+
+        valid_correct_seq = 0
+        valid_correct_length = 0
+        valid_correct_digits = np.array([0] * 5)
+        valid_digit_seq = np.array([0] * 5)
+
+        valid_detailed_accuracy = [None] * 6
 
         # Set model to evaluate mode
-
-        model.eval()
 
         # Iterate over valid data
         print("\n\nIterating over validation data...")
         for i, batch in enumerate(tqdm(_loader)):
+
             # get the inputs
             inputs, targets = batch['image'], batch['target']
 
@@ -43,13 +47,14 @@ class Evaluator(object):
             target_digits = target_digits.to(device)
 
             # Forward
-            outputs = model(inputs)
+            outputs = model.eval()(inputs)
 
             total_loss = multi_loss(outputs, target_ndigits, target_digits)
 
             # Statistics
             valid_loss += total_loss.item()
             valid_n_iter += 1
+
             _, predicted_num_digits = torch.max(outputs[0].data, 1)
 
             predicted_digits_data = []
@@ -61,26 +66,47 @@ class Evaluator(object):
             _, predicted_digits = torch.max(predicted_digits_data, 2)
 
             for k in range(predicted_digits.size(0)):
+                target_length = target_ndigits[k].item()
+
+                valid_digit_seq[:target_length] += 1
+
+                if target_length == predicted_num_digits[k].item():
+                    valid_correct_length += 1
+
                 curated_seq = predicted_digits[k]
                 curated_seq[predicted_num_digits[k]:] = -1
                 if curated_seq.eq(target_digits[k]).sum().item() == 5:
-                    valid_seq_correct += 1
+                    valid_correct_seq += 1
 
-            valid_n_samples += target_ndigits.size(0)
+                for j in range(5):
+
+                    if curated_seq[j].item() != -1 and curated_seq[j].item() == target_digits[k][j].item():
+                        valid_correct_digits[j] += 1
+
+            valid_n_samples += predicted_digits.size(0)
+
+        valid_avg_loss = valid_loss / valid_n_iter
+        valid_accuracy = valid_correct_seq / valid_n_samples
+
+        valid_detailed_accuracy[0] = valid_correct_length / valid_n_samples
+
+        for i in range(1, 6):
+            if valid_digit_seq[i-1] != 0:
+                valid_detailed_accuracy[i] = "{:.4f}".format((valid_correct_digits[i-1] / valid_digit_seq[i-1]))
+            else:
+                valid_detailed_accuracy[i] = "No examples of length {} digit(s) or more.".format(i)
 
         # adding log
-        writer6.add_scalar('Valid Loss', valid_loss / valid_n_iter, epoch)
-        writer7.add_scalar('Valid seq_acc', valid_seq_correct / valid_n_samples, epoch)
 
-        valid_loss_history.append(valid_loss / valid_n_iter)
-        valid_accuracy = valid_seq_correct / valid_n_samples
+        writer4.add_scalar('Loss', valid_avg_loss, epoch + 1)
 
-        best_model = None
+        writer5.add_scalar('Accuracy', valid_accuracy, epoch + 1)
+        writer5.add_scalar('Length Accuracy', valid_detailed_accuracy[0], epoch + 1)
 
-        if valid_accuracy > valid_best_accuracy:
-            valid_best_accuracy = valid_accuracy
-            best_model = copy.deepcopy(model)
-        valid_accuracy_history.append(valid_accuracy)
+        for k in range(5):
+            if valid_digit_seq[k] != 0:
+                writer5.add_scalar('Digit {} Accuracy'.format(k + 1), valid_correct_digits[k] / valid_digit_seq[k],
+                                   epoch + 1)
 
-        return valid_loss_history, valid_best_accuracy, valid_accuracy_history, best_model
+        return valid_avg_loss, valid_accuracy, valid_detailed_accuracy
 

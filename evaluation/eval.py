@@ -1,16 +1,14 @@
 import argparse
+import random
+import sys
+import time
 from pathlib import Path
 
 import numpy as np
 import torch
-
-import time
-
-from tqdm import tqdm
-import random
 from sklearn.metrics import confusion_matrix
+from tqdm import tqdm
 
-import sys
 sys.path.append('..')
 
 from utils.dataloader import prepare_dataloaders
@@ -18,7 +16,7 @@ from utils.dataloader import prepare_dataloaders
 
 def eval_model(dataset_dir, metadata_filename, model_filename,
                batch_size=32, sample_size=-1):
-    '''
+    """
     Validation loop.
 
     Parameters
@@ -40,7 +38,7 @@ def eval_model(dataset_dir, metadata_filename, model_filename,
     y_pred : ndarray
         Prediction of the model.
 
-    '''
+    """
 
     seed = 1234
 
@@ -115,8 +113,7 @@ def eval_model(dataset_dir, metadata_filename, model_filename,
 
 
 if __name__ == "__main__":
-
-    ###### DO NOT MODIFY THIS SECTION ######
+    ''' DO NOT MODIFY THIS SECTION '''
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--metadata_filename", type=str, default='')
@@ -137,8 +134,7 @@ if __name__ == "__main__":
     results_dir = args.results_dir
     #########################################
 
-
-    ###### MODIFY THIS SECTION ######
+    '''' MODIFY THIS SECTION '''
     # Put your group name here
     group_name = "b1phut_baseline"
 
@@ -149,8 +145,7 @@ if __name__ == "__main__":
 
     #################################
 
-
-    ###### DO NOT MODIFY THIS SECTION ######
+    ''' DO NOT MODIFY THIS SECTION '''
     print("\nEvaluating results ... ")
     y_pred = eval_model(dataset_dir, metadata_filename, model_filename)
 

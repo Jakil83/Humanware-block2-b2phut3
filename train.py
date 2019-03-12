@@ -13,7 +13,7 @@ from utils.checkpointer import CheckpointSaver
 from utils.config import cfg_from_file
 from utils.dataloader import prepare_dataloaders
 from utils.misc import mkdir_p, fix_seed
-# from models.baselines import BaselineCNN, ConvNet, BaselineCNN_dropout
+# from models.baselines import BaselineCNN, ConvNet, BaselineCNNDropout
 from models.vgg import VGG
 # from models.resnet import ResNet18
 from trainer.trainer import train_model
@@ -41,7 +41,8 @@ def parse_args():
     parser.add_argument("--metadata_filename", nargs='+', type=str,
                         default=['data/SVHN/train_metadata.pkl', 'data/SVHN/extra_metadata.pkl'],
                         help='''metadata_filename will be the absolute
-                                paths to the metadata files of the data (order is [train, extra] if both are provided).''')
+                                paths to the metadata files of the data (order is [train, extra] 
+                                if both are provided).''')
 
     parser.add_argument("--checkpoint_dir", type=str,
                         default="checkpoints",
@@ -126,7 +127,7 @@ if __name__ == '__main__':
     # baseline_cnn = ConvNet(num_classes_length=7, num_classes_digits=10)
     # baseline_cnn = BaselineCNN(num_classes_length=7, num_classes_digits=10)
     # resnet18 = ResNet18(num_classes_length=7, num_classes_digits=10)
-    # baseline_cnn = BaselineCNN_dropout(num_classes=7, p=0.5)
+    # baseline_cnn = BaselineCNNDropout(num_classes=7, p=0.5)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("Device used: ", device)

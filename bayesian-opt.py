@@ -1,22 +1,22 @@
 from __future__ import print_function
+
+import argparse
+import datetime
 import os
 import sys
-import argparse
-import dateutil.tz
-import datetime
-import numpy as np
-import pprint
-import random
 from shutil import copyfile
-import torch
+
+import dateutil.tz
 import skopt
+import torch
+
+# from models.baselines import BaselineCNN, ConvNet, BaselineCNNDropout
+from models.vgg import VGG
+from trainer.trainer import train_model
+from utils.checkpointer import CheckpointSaverCallback
 from utils.config import cfg_from_file
 from utils.dataloader import prepare_dataloaders
-from utils.misc import mkdir_p, fix_seed
-# from models.baselines import BaselineCNN, ConvNet, BaselineCNN_dropout
-from models.vgg import VGG
-from utils.checkpointer import CheckpointSaver, CheckpointSaverCallback
-from trainer.trainer import train_model
+from utils.misc import mkdir_p
 
 dir_path = (os.path.abspath(os.path.join(os.path.realpath(__file__), './.')))
 sys.path.append(dir_path)
@@ -40,12 +40,13 @@ def parse_args():
 
     parser.add_argument("--metadata_filename", nargs='+', type=str,
                         default=['data/SVHN/train_metadata.pkl', 'data/SVHN/extra_metadata.pkl'],
-                        help='''metadata_filename will be the absolute
-                                paths to the metadata files of the data (order is [train, extra] if both are provided).''')
+                        help='''metadata_filename will be the absolute paths to the metadata files 
+                        of the data (order is [train, extra] if both are provided).''')
 
     parser.add_argument("--checkpoint_dir", type=str,
                         default="checkpoints",
-                        help='''checkpoint_dir will be the absolute path to the directory used for checkpointing''')
+                        help='''checkpoint_dir will be the absolute path to the directory used 
+                        for checkpointing''')
 
     parser.add_argument("--dataset_dir", nargs='+', type=str,
                         default=['data/SVHN/train', 'data/SVHN/extra'],
@@ -113,7 +114,6 @@ def load_config(args):
 
 
 def train_model_opt(parameters):
-
     print("Training model with parameters: {}\n\n\n".format(parameters))
     args = parse_args()
 
@@ -147,7 +147,7 @@ if __name__ == '__main__':
     # fix_seed(cfg.SEED)
 
     space = [skopt.space.Real(10 ** -5, 10 ** 0, "log-uniform", name='lr'),
-             skopt.space.Integer(16,128 ,name='batch_size')
+             skopt.space.Integer(16, 128, name='batch_size')
              ]
 
     checkpoint_path = os.path.join(args.checkpoint_dir, "bayesian_checkpoint.pkl")

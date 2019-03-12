@@ -1,19 +1,22 @@
 import torch.nn as nn
-import torch.nn.functional as F
+import torch.nn.functional as functional
 
 
 class ConvNet(nn.Module):
 
     def __init__(self, num_classes_length, num_classes_digits):
-        '''
+        """
         Convolutional Neural Network.
 
         Parameters
         ----------
-        num_classes : int
-            Number of classes for the output of the network.
+        num_classes_length : int
+            Number of classes for the length output of the network.
 
-        '''
+        num_classes_digits : int
+            Number of classes for the digit output of the network.
+
+        """
 
         super(ConvNet, self).__init__()
 
@@ -44,7 +47,7 @@ class ConvNet(nn.Module):
         self.fc_digit5 = nn.Linear(4608, num_classes_digits)
 
     def forward(self, x):
-        '''
+        """
         Forward path.
 
         Parameters
@@ -57,7 +60,7 @@ class ConvNet(nn.Module):
         x : ndarray
             Output to the network.
 
-        '''
+        """
         out = self.layer1(x)
         out = self.layer2(out)
         out = self.layer3(out)
@@ -71,9 +74,9 @@ class ConvNet(nn.Module):
 class BaselineCNN(nn.Module):  # Achieves ~91%
 
     def __init__(self, num_classes_length, num_classes_digits):
-        '''
+        """
         Placeholder CNN
-        '''
+        """
         super(BaselineCNN, self).__init__()
 
         self.conv1 = nn.Conv2d(3, 32, 5)
@@ -91,7 +94,7 @@ class BaselineCNN(nn.Module):  # Achieves ~91%
         self.fc_digit5 = nn.Linear(4096, num_classes_digits)
 
     def forward(self, x):
-        '''
+        """
         Forward path.
 
         Parameters
@@ -104,25 +107,25 @@ class BaselineCNN(nn.Module):  # Achieves ~91%
         x : ndarray
             Output to the network.
 
-        '''
+        """
 
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
+        x = self.pool(functional.relu(self.conv1(x)))
+        x = self.pool(functional.relu(self.conv2(x)))
         # Flatten based on batch size
         x = x.view(x.size(0), -1)
-        x = F.relu(self.fc1(x))
+        x = functional.relu(self.fc1(x))
 
         return [self.fc_seq_length(x), self.fc_digit1(x), self.fc_digit2(x),
                 self.fc_digit3(x), self.fc_digit4(x), self.fc_digit5(x)]
 
 
-class BaselineCNN_dropout(nn.Module):
+class BaselineCNNDropout(nn.Module):
 
     def __init__(self, num_classes_length, num_classes_digits, p=0.5):
-        '''
+        """
         Placeholder CNN
-        '''
-        super(BaselineCNN_dropout, self).__init__()
+        """
+        super(BaselineCNNDropout, self).__init__()
 
         self.p = p
         self.conv1 = nn.Conv2d(3, 32, 5)
@@ -141,7 +144,7 @@ class BaselineCNN_dropout(nn.Module):
         self.fc_digit5 = nn.Linear(4096, num_classes_digits)
 
     def forward(self, x):
-        '''
+        """
         Forward path.
 
         Parameters
@@ -154,17 +157,17 @@ class BaselineCNN_dropout(nn.Module):
         x : ndarray
             Output to the network.
 
-        '''
+        """
 
-        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(functional.relu(self.conv1(x)))
         x = self.dropout(x)
 
-        x = self.pool(F.relu(self.conv2(x)))
+        x = self.pool(functional.relu(self.conv2(x)))
         x = self.dropout(x)
         # Flatten based on batch size
         x = x.view(x.size(0), -1)
 
-        x = F.relu(self.fc1(x))
+        x = functional.relu(self.fc1(x))
         x = self.dropout(x)
 
         return [self.fc_seq_length(x), self.fc_digit1(x), self.fc_digit2(x),

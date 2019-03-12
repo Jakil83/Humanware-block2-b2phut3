@@ -34,7 +34,7 @@ results/*
 tmp_results/*
 checkpoints/*
 run/*
-data/*
+data/SVHN/*
 spyder.egg-info/
 Thumbs.db
 .DS_Store/
@@ -46,4 +46,3 @@ spyder_crash.log
 .swp
 .err
 .out
-4*

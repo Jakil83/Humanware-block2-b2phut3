@@ -18,7 +18,7 @@ from sklearn.model_selection import StratifiedShuffleSplit
 class SVHNDataset(data.Dataset):
 
     def __init__(self, metadata, data_dir, transform=None):
-        '''
+        """
         Initialize the Dataset.
 
         Parameters
@@ -49,13 +49,13 @@ class SVHNDataset(data.Dataset):
         transform : callable, optional
             Optional transform to be applied on a sample.
 
-        '''
+        """
         self.metadata = metadata
         self.data_dir = data_dir
         self.transform = transform
 
     def __len__(self):
-        '''
+        """
         Evaluate the length of the dataset object
 
         Returns
@@ -63,11 +63,11 @@ class SVHNDataset(data.Dataset):
         int
             The length of the dataset.
 
-        '''
+        """
         return len(self.metadata)
 
     def __getitem__(self, index):
-        '''
+        """
         Get an indexed item from the dataset and return it.
 
         Parameters
@@ -84,7 +84,7 @@ class SVHNDataset(data.Dataset):
             image. It can be one of ['labels','boxes','filename']
 
 
-        '''
+        """
         'Generates one sample of data'
 
         img_name = os.path.join(self.data_dir,
@@ -110,7 +110,7 @@ class FullSVHNDataset(data.Dataset):
 
     def __init__(self, metadata_train, metadata_extra, train_data_dir,
                  extra_data_dir, transform=None):
-        '''
+        """
         Initialize the Dataset.
 
         Parameters
@@ -141,7 +141,7 @@ class FullSVHNDataset(data.Dataset):
         transform : callable, optional
             Optional transform to be applied on a sample.
 
-        '''
+        """
         self.metadata_train = metadata_train
         self.metadata_extra = metadata_extra
         self.train_data_dir = train_data_dir
@@ -149,7 +149,7 @@ class FullSVHNDataset(data.Dataset):
         self.transform = transform
 
     def __len__(self):
-        '''
+        """
         Evaluate the length of the dataset object
 
         Returns
@@ -157,11 +157,11 @@ class FullSVHNDataset(data.Dataset):
         int
             The length of the dataset.
 
-        '''
+        """
         return len(self.metadata_train) + len(self.metadata_extra)
 
     def __getitem__(self, index):
-        '''
+        """
         Get an indexed item from the dataset and return it.
 
         Parameters
@@ -178,7 +178,7 @@ class FullSVHNDataset(data.Dataset):
             image. It can be one of ['labels','boxes','filename']
 
 
-        '''
+        """
         'Generates one sample of data'
 
         if index < len(self.metadata_train):
@@ -188,7 +188,6 @@ class FullSVHNDataset(data.Dataset):
             index -= len(self.metadata_train)
             data_dir = self.extra_data_dir
             metadata = self.metadata_extra
-
 
         img_name = os.path.join(data_dir,
                                 metadata[index]['filename'])
@@ -211,7 +210,7 @@ class FullSVHNDataset(data.Dataset):
 
 def prepare_dataloaders(cfg):
 
-     # Prepare data
+    # Prepare data
     dataset_split = cfg.TRAIN.DATASET_SPLIT
     dataset_path = cfg.INPUT_DIR
     metadata_filename = cfg.METADATA_FILENAME
@@ -348,7 +347,8 @@ def prepare_dataloaders(cfg):
             indices_extra = indices_extra[:sample_size[1]]
             y_extra = y_extra[:sample_size[1]]
 
-        if stratified: # If we want balanced splits
+        # If we want balanced splits
+        if stratified:
 
             train_splitter = StratifiedShuffleSplit(n_splits=1, test_size=None, train_size=valid_split_train)
 

@@ -1,5 +1,5 @@
 import torch.nn as nn
-import torch.nn.functional as F
+import torch.nn.functional as functional
 
 '''ResNet in PyTorch.
 For Pre-activation ResNet, see 'preact_resnet.py'.
@@ -29,10 +29,10 @@ class BasicBlock(nn.Module):
             )
 
     def forward(self, x):
-        out = F.relu(self.bn1(self.conv1(x)))
+        out = functional.relu(self.bn1(self.conv1(x)))
         out = self.bn2(self.conv2(out))
         out += self.shortcut(x)
-        out = F.relu(out)
+        out = functional.relu(out)
         return out
 
 
@@ -56,11 +56,11 @@ class Bottleneck(nn.Module):
             )
 
     def forward(self, x):
-        out = F.relu(self.bn1(self.conv1(x)))
-        out = F.relu(self.bn2(self.conv2(out)))
+        out = functional.relu(self.bn1(self.conv1(x)))
+        out = functional.relu(self.bn2(self.conv2(out)))
         out = self.bn3(self.conv3(out))
         out += self.shortcut(x)
-        out = F.relu(out)
+        out = functional.relu(out)
         return out
 
 
@@ -91,32 +91,32 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        out = F.relu(self.bn1(self.conv1(x)))
+        out = functional.relu(self.bn1(self.conv1(x)))
         out = self.layer1(out)
         out = self.layer2(out)
         out = self.layer3(out)
         out = self.layer4(out)
-        out = F.avg_pool2d(out, 4)
+        out = functional.avg_pool2d(out, 4)
         out = out.view(out.size(0), -1)
         return [self.linear_seq_length(out), self.linear_digit1(out), self.linear_digit2(out),
                 self.linear_digit3(out), self.linear_digit4(out), self.linear_digit5(out)]
 
 
-def ResNet18(num_classes_length, num_classes_digits):
+def get_resnet18(num_classes_length, num_classes_digits):
     return ResNet(BasicBlock, [2, 2, 2, 2], num_classes_length, num_classes_digits)
 
 
-def ResNet34(num_classes_length, num_classes_digits):
+def get_resnet34(num_classes_length, num_classes_digits):
     return ResNet(BasicBlock, [3, 4, 6, 3], num_classes_length, num_classes_digits)
 
 
-def ResNet50(num_classes_length, num_classes_digits):
+def get_resnet50(num_classes_length, num_classes_digits):
     return ResNet(Bottleneck, [3, 4, 6, 3], num_classes_length, num_classes_digits)
 
 
-def ResNet101(num_classes_length, num_classes_digits):
+def get_resnet101(num_classes_length, num_classes_digits):
     return ResNet(Bottleneck, [3, 4, 23, 3], num_classes_length, num_classes_digits)
 
 
-def ResNet152(num_classes_length, num_classes_digits):
+def get_resnet152(num_classes_length, num_classes_digits):
     return ResNet(Bottleneck, [3, 8, 36, 3], num_classes_length, num_classes_digits)

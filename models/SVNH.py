@@ -101,11 +101,11 @@ class Model(nn.Module):
         x = x.view(x.size(0), 192 * 7 * 7)
         x = self._classifier(x)
 
-        outputs = [self._digit_length(x),self._digit1(x),
-                                                               self._digit2(x),
-                                                               self._digit3(x),
-                                                               self._digit4(x),
-                                                               self._digit5(x)]
+        outputs = [self._digit_length(x), self._digit1(x),
+                   self._digit2(x),
+                   self._digit3(x),
+                   self._digit4(x),
+                   self._digit5(x)]
         return outputs
 
     def save(self, path_to_dir, step, maximum=5):
@@ -127,6 +127,7 @@ class Model(nn.Module):
     def load_max_step(self, path_to_checkpoint_dir):
         path_to_models = glob.glob(os.path.join(path_to_checkpoint_dir, Model.CHECKPOINT_FILENAME_PATTERN.format('*')))
         max_step = max([int(path_to_model.split('/')[-1][6:-4]) for path_to_model in path_to_models])
-        path_to_checkpoint_file = os.path.join(path_to_checkpoint_dir, Model.CHECKPOINT_FILENAME_PATTERN.format(max_step))
+        path_to_checkpoint_file = os.path.join(path_to_checkpoint_dir,
+                                               Model.CHECKPOINT_FILENAME_PATTERN.format(max_step))
         self.load(path_to_checkpoint_file)
         return max_step

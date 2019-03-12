@@ -4,7 +4,7 @@ from scipy.stats import wilcoxon
 
 
 def evaluate_stats(y_true, y_pred1, y_pred2):
-    '''
+    """
     Statistical evaluation. Compare the distribution of the prediction
     of two different models using the Wilcoxon signed-rank test and
     print the p-value.
@@ -18,7 +18,7 @@ def evaluate_stats(y_true, y_pred1, y_pred2):
     y_pred2: ndarray
         The prediction of the second model.
 
-    '''
+    """
 
     assert len(y_true) == len(y_pred1), "# of samples differ"
     assert len(y_true) == len(y_pred2), "# of samples differ"

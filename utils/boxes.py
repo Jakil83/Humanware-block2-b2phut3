@@ -2,7 +2,7 @@ import numpy as np
 
 
 def extract_labels_boxes(meta):
-    '''
+    """
     Extract the labels and boxes from the raw metadata.
 
     Parameters
@@ -19,15 +19,15 @@ def extract_labels_boxes(meta):
         Contains the tuples (x1, x2, y1, y2) of coordinates of bounding boxes
         associated to each digit in labels.
 
-    '''
+    """
 
-    N = len(meta['label'])  # Number of digits in image
+    n = len(meta['label'])  # Number of digits in image
 
     labels = []  # Digits present in image
     boxes = []  # bboxes present in image
 
     # Extract digit boxes and labels
-    for jj in range(N):
+    for jj in range(n):
         labels.append(int(meta['label'][jj]))
         y1 = meta['top'][jj]
         y2 = y1 + meta['height'][jj]
@@ -42,7 +42,7 @@ def extract_labels_boxes(meta):
 
 
 def extract_outer_box(sample, padding=0.3):
-    '''
+    """
     Extract outer box from individuals boxes.
 
     Parameters
@@ -59,7 +59,7 @@ def extract_outer_box(sample, padding=0.3):
         Tuple (x1, x2, y1, y2) of coordinates of bounding boxes
         associated to the digits sequence.
 
-    '''
+    """
     img_shape = np.asarray(sample['image']).shape
     boxes = sample['metadata']['boxes']
 

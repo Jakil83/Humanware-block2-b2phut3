@@ -1,8 +1,7 @@
 from __future__ import division
 from __future__ import print_function
 
-from easydict import EasyDict as edict
-import numpy as np
+from easydict import EasyDict as eDict
 
 
 def cfg_from_file(filename):
@@ -16,5 +15,5 @@ def cfg_from_file(filename):
      """
     import yaml
     with open(filename, 'r') as f:
-        return edict(yaml.load(f))
+        return eDict(yaml.load(f))
 
