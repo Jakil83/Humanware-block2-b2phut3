@@ -131,31 +131,27 @@ def train_model(model, train_loader, valid_loader, device,cfg):
             train_loss += total_loss.item()
             train_n_iter += 1
 
-            # add the model graph
-
-            writer1.add_scalar('Train/loss', train_loss / train_n_iter, i)
-
-            # log the layers and layers gradient histogram and distributions
-
-            #for tag, value in model.named_parameters():
-            #    tag = tag.replace('.', '/')
-            #    writer2.add_histogram('model/(train)' + tag, to_np(value), i + 1)
-            #    writer3.add_histogram('model/(train)' + tag + '/grad', to_np(value.grad), i + 1)
-
-            # log the outputs given by the model (The segmentation)
-            #writer4.add_image('model/(train)output', make_grid(outputs[0].data), i + 1)
-
-
             # update progress bar status
             pbar.set_description('[TRAIN] - EPOCH %d/ %d - BATCH LOSS: %.4f(avg) '
                                  % (epoch + 1, num_epochs, train_loss / train_n_iter))
 
-        #writer5.add_graph(model, inputs)
+        # log the layers and layers gradient histogram and distributions
+        for tag, value in model.named_parameters():
+           tag = tag.replace('.', '/')
+           writer2.add_histogram('model/(train)' + tag, to_np(value), epoch + 1)
+           writer3.add_histogram('model/(train)' + tag + '/grad', to_np(value.grad), epoch + 1)
+
+        # log the outputs given by the model (The segmentation)
+        writer4.add_image('model/(train)output', make_grid(outputs[0].data), epoch + 1)
+        writer5.add_graph(model, inputs)
+
+        # add the model graph
+        writer1.add_scalar('Train/loss', train_loss / train_n_iter, epoch)
 
         train_loss_history.append(train_loss / train_n_iter)
 
         valid_loss_history, valid_accuracy, valid_accuracy_history, best_model = \
-            Evaluator().evaluate(valid_loader, model, multi_loss, device, output_dir)
+            Evaluator().evaluate(valid_loader, model, multi_loss, device, output_dir, epoch)
 
         scheduler.step(valid_loss_history[-1])
 

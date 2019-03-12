@@ -10,7 +10,7 @@ class Evaluator(object):
 
         self.volatile = volatile
 
-    def evaluate(self, _loader, model, multi_loss, device, output_dir):
+    def evaluate(self, _loader, model, multi_loss, device, output_dir, epoch):
 
         writer6 = SummaryWriter('run/valid_lossr')
         writer7 = SummaryWriter('run/vseq_acc')
@@ -68,9 +68,9 @@ class Evaluator(object):
 
             valid_n_samples += target_ndigits.size(0)
 
-            # adding log
-            writer6.add_scalar('Valid Loss', valid_loss / valid_n_iter, i)
-            writer7.add_scalar('Valid seq_acc', valid_seq_correct / valid_n_samples, i)
+        # adding log
+        writer6.add_scalar('Valid Loss', valid_loss / valid_n_iter, epoch)
+        writer7.add_scalar('Valid seq_acc', valid_seq_correct / valid_n_samples, epoch)
 
         valid_loss_history.append(valid_loss / valid_n_iter)
         valid_accuracy = valid_seq_correct / valid_n_samples
