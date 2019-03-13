@@ -147,7 +147,7 @@ if __name__ == '__main__':
     # Make the results reproductible
     # fix_seed(cfg.SEED)
 
-    space = [skopt.space.Real(10 ** -6, 10 ** -2, "log-uniform", name='lr'),
+    space = [skopt.space.Real(10 ** -5, 10 ** 0, "log-uniform", name='lr'),
              skopt.space.Integer(16, 128, name='batch_size')
              ]
 

@@ -144,7 +144,7 @@ def train_model(model, train_loader, valid_loader, device, cfg):
             for j in range(5):
                 predicted_digits_data.append(outputs[j + 1].data)
 
-            predicted_digits_data = torch.stack(predicted_digits_data, 1) model.eval()
+            predicted_digits_data = torch.stack(predicted_digits_data, 1)
             _, predicted_digits = torch.max(predicted_digits_data, 2)
 
             for k in range(predicted_digits.size(0)):
