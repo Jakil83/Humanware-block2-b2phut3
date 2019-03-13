@@ -86,7 +86,7 @@ def train_model(model, train_loader, valid_loader, device, cfg):
     model = model.to(device)
 
     optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=3,
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.1, patience=5,
                                                            verbose=True, min_lr=1e-5)
     print("# Start training #")
     for epoch in range(current_epoch, num_epochs):
@@ -171,23 +171,6 @@ def train_model(model, train_loader, valid_loader, device, cfg):
             pbar.set_description('[TRAIN] - EPOCH %d/ %d - BATCH LOSS: %.4f(avg) '
                                  % (epoch + 1, num_epochs, train_loss / train_n_iter))
 
-        '''
-        # log the layers and layers gradient histogram and distributions
-        for tag, value in model.named_parameters():
-           tag = tag.replace('.', '/')
-           writer2.add_histogram('model/(train)' + tag, to_np(value), epoch + 1)
-           writer3.add_histogram('model/(train)' + tag + '/grad', to_np(value.grad), epoch + 1)
-
-        # log the outputs given by the model (The segmentation)
-        writer4.add_image('model/(train)output', make_grid(outputs[0].data), epoch + 1)
-        writer5.add_graph(model, inputs)
-
-        # add the model graph
-        writer1.add_scalar('Train/loss', train_loss / train_n_iter, epoch)
-
-        train_loss_history.append(train_loss / train_n_iter)
-        '''
-
         train_avg_loss = train_loss / train_n_iter
         train_accuracy = train_correct_seq / train_n_samples
 
@@ -211,7 +194,7 @@ def train_model(model, train_loader, valid_loader, device, cfg):
         valid_avg_loss, valid_accuracy, valid_detailed_accuracy = \
             Evaluator().evaluate(epoch, valid_loader, model, multi_loss, device)
 
-        scheduler.step(valid_avg_loss)
+        scheduler.step(valid_accuracy)
 
         if valid_accuracy > valid_best_accuracy:
             valid_best_accuracy = valid_accuracy
@@ -241,7 +224,7 @@ def train_model(model, train_loader, valid_loader, device, cfg):
 
         print("\nDetailed valid accuracies:\n")
 
-        print('\tLength Accuracy: {}'.format(valid_detailed_accuracy[0]))
+        print('\tLength Accuracy: {:.4f}'.format(valid_detailed_accuracy[0]))
 
         for i in range(5):
             print('\tDigit {} Accuracy: {}'.format(i + 1, valid_detailed_accuracy[i + 1]))

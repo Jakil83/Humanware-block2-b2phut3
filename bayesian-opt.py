@@ -120,6 +120,9 @@ def train_model_opt(parameters):
     # Load the config file
     cfg = load_config(args)
 
+    cfg.TRAIN.LR = parameters[0]
+    cfg.TRAIN.BATCH_SIZE = parameters[1]
+
     (train_loader,
      valid_loader) = prepare_dataloaders(cfg)
 
@@ -127,10 +130,8 @@ def train_model_opt(parameters):
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("Device used: ", device)
-    cfg.TRAIN.LR = parameters[0]
-    cfg.TRAIN.BATCH_SIZE = parameters[1]
 
-    return train_model(vgg19,
+    return -train_model(vgg19,
                        cfg=cfg,
                        train_loader=train_loader,
                        valid_loader=valid_loader,
