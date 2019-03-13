@@ -30,7 +30,7 @@ class Evaluator(object):
         valid_detailed_accuracy = [None] * 6
 
         # Set model to evaluate mode
-
+        model.eval()
         # Iterate over valid data
         print("\n\nIterating over validation data...")
         for i, batch in enumerate(tqdm(_loader)):
@@ -97,9 +97,7 @@ class Evaluator(object):
                 valid_detailed_accuracy[i] = "No examples of length {} digit(s) or more.".format(i)
 
         # adding log
-
         writer4.add_scalar('Loss', valid_avg_loss, epoch + 1)
-
         writer5.add_scalar('Accuracy', valid_accuracy, epoch + 1)
         writer5.add_scalar('Length Accuracy', valid_detailed_accuracy[0], epoch + 1)
 
