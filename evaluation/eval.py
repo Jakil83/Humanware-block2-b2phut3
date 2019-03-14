@@ -11,7 +11,45 @@ from tqdm import tqdm
 
 sys.path.append('..')
 
-from utils.dataloader import prepare_dataloaders
+from utils.dataloader import prepare_test_dataloader
+
+
+def to_int(number):
+    """
+    Transform a digit represented in a tensor as a single integer value
+    :param number: PyTorch tensor representing the digit
+    :return: an integer value representing the number
+    """
+    number_str = ""
+    for digit in number:
+        number_str += str(digit.long().item())
+
+    return int(number_str)
+
+
+def format_digits(batch_digits):
+    """
+    Format a batch of digits in the following format: [[1,2,3]] = [123]
+    :param batch_digits: PyTorch tensor representing the digits, -1 means that no digit is at this position
+    :return: a numpy array of the formatted digits
+    """
+    formatted_digits = []
+    for i in range(batch_digits.size()[0]):
+        no_digits = (batch_digits[i, :] == -1).nonzero()
+        if no_digits.size()[0] == 0:
+            formatted_digits.append(to_int(batch_digits[i, :]))
+        else:
+            formatted_digits.append(to_int(batch_digits[i, :no_digits[0]]))
+
+    return np.array(formatted_digits, dtype=np.int32)
+
+
+def format_predict_digits(batch_digits, batch_predict_seq_length):
+    formatted_digits = []
+    for i in range(batch_digits.size()[0]):
+        formatted_digits.append(to_int(batch_digits[i, :batch_predict_seq_length[i].long().item()]))
+
+    return np.array(formatted_digits, dtype=np.int32)
 
 
 def eval_model(dataset_dir, metadata_filename, model_filename,
@@ -51,18 +89,16 @@ def eval_model(dataset_dir, metadata_filename, model_filename,
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
 
-    dataset_split = 'test'
-
-    test_loader = prepare_dataloaders(dataset_split=dataset_split,
-                                      dataset_path=dataset_dir,
-                                      metadata_filename=metadata_filename,
-                                      batch_size=batch_size,
-                                      sample_size=sample_size)
+    test_loader = prepare_test_dataloader(dataset_path=dataset_dir,
+                                          metadata_filename=metadata_filename,
+                                          batch_size=batch_size,
+                                          sample_size=sample_size)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("Device used: ", device)
 
     # Load best model
+    print(model_filename)
     model = torch.load(model_filename, map_location=device)
     since = time.time()
     model = model.to(device)
@@ -79,20 +115,33 @@ def eval_model(dataset_dir, metadata_filename, model_filename,
 
         inputs = inputs.to(device)
 
-        target_ndigits = targets[:, 0].long()
-        target_ndigits = target_ndigits.to(device)
+        # target_ndigits = targets[:, 0].long()
+        # target_ndigits = target_ndigits.to(device)
+
+        target_digits = targets[:, 1:].long()
+        target_digits = format_digits(target_digits)
 
         # Forward
         outputs = model(inputs)
+        _, predicted_num_digits = torch.max(outputs[0].data, 1)
 
-        # Statistics
-        _, predicted = torch.max(outputs.data, 1)
+        predicted_digits_data = []
 
-        y_pred.extend(list(predicted.cpu().numpy()))
-        y_true.extend(list(target_ndigits.cpu().numpy()))
+        for j in range(5):
+            predicted_digits_data.append(outputs[j + 1].data)
 
-        test_correct += (predicted == target_ndigits).sum().item()
-        test_n_samples += target_ndigits.size(0)
+        predicted_digits_data = torch.stack(predicted_digits_data, 1)
+        _, predicted_digits = torch.max(predicted_digits_data, 2)
+
+        _, predicted_num_digits = torch.max(outputs[0].data, 1)
+
+        predicted_digits = format_predict_digits(predicted_digits, predicted_num_digits)
+
+        y_pred.extend(list(predicted_digits))
+        y_true.extend(list(target_digits))
+
+        test_correct += (predicted_digits == target_digits).sum()
+        test_n_samples += target_digits.shape[0]
         test_accuracy = test_correct / test_n_samples
 
     print("Confusion Matrix")
@@ -105,10 +154,8 @@ def eval_model(dataset_dir, metadata_filename, model_filename,
 
     print('\n\nTesting complete in {:.0f}m {:.0f}s'.format(
         time_elapsed // 60, time_elapsed % 60))
-
     y_true = np.asarray(y_true)
     y_pred = np.asarray(y_pred)
-
     return y_pred
 
 
@@ -138,7 +185,8 @@ if __name__ == "__main__":
     # Put your group name here
     group_name = "b1phut_baseline"
 
-    model_filename = '/rap/jvb-000-aa/COURS2019/etudiants/submissions/b1phut_baseline/model/vgg19_momentum.pth'
+    # model_filename = '/rap/jvb-000-aa/COURS2019/etudiants/submissions/b1phut_baseline/model/vgg19_momentum.pth'
+    model_filename = "/home/user26/blk2_humanware/checkpoints/checkpoint_epoch20.pth"
     # model_filename should be the absolute path on shared disk to your
     # best model. You need to ensure that they are available to evaluators on
     # Helios.
@@ -155,5 +203,5 @@ if __name__ == "__main__":
     results_fname = Path(results_dir) / (group_name + '_eval_pred.txt')
 
     print('\nSaving results to ', results_fname.absolute())
-    np.savetxt(results_fname, y_pred, fmt='%.1f')
+    np.savetxt(results_fname, y_pred, fmt="%d")
     #########################################

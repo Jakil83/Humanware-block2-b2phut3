@@ -391,28 +391,40 @@ def prepare_dataloaders(cfg):
 
         return train_loader, valid_loader
 
-    elif dataset_split in ['test']:
 
-        metadata = load_obj(metadata_filename[0])
+def prepare_test_dataloader(dataset_path, metadata_filename, batch_size, sample_size):
+    firstcrop = FirstCrop(0.3)
+    rescale = Rescale((64, 64))
+    random_crop = RandomCrop((54, 54))
+    to_tensor = ToTensor()
 
-        dataset = SVHNDataset(metadata,
-                              data_dir=dataset_path[0],
-                              transform=transform)
+    # Declare transformations
 
-        indices = np.arange(len(metadata))
-        #  indices = np.random.permutation(indices)
+    transform = transforms.Compose([firstcrop,
+                                    rescale,
+                                    random_crop,
+                                    to_tensor,
+                                    ])
 
-        # Only use a sample amount of data
-        if sample_size != -1:
-            indices = indices[:sample_size]
+    metadata = load_obj(metadata_filename)
 
-        test_sampler = torch.utils.data.SequentialSampler(indices)
+    dataset = SVHNDataset(metadata,
+                          data_dir=dataset_path,
+                          transform=transform)
 
-        # Prepare a test dataloader
-        test_loader = DataLoader(dataset,
-                                 batch_size=batch_size,
-                                 num_workers=4,
-                                 shuffle=False,
-                                 sampler=test_sampler)
+    indices = np.arange(len(metadata))
+    #  indices = np.random.permutation(indices)
 
-        return test_loader
+    # Only use a sample amount of data
+    if sample_size != -1:
+        indices = indices[:sample_size]
+
+    test_sampler = torch.utils.data.SequentialSampler(indices)
+
+    # Prepare a test dataloader
+    test_loader = DataLoader(dataset,
+                             batch_size=batch_size,
+                             num_workers=4,
+                             shuffle=False,
+                             sampler=test_sampler)
+    return test_loader
