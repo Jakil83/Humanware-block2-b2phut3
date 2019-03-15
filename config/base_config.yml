@@ -4,19 +4,14 @@ SEED: 1234
 
 # Hyperparameters related to model training
 TRAIN:
-  DATASET_SPLIT: 'train+extra'
-  VALID_SPLIT: [0.8, 1] # [train_split, extra_split]
+  VALID_SPLIT: [0.85, 1] # [train_split, extra_split]
   CURRENT_EPOCH: 0
-  SAMPLE_SIZE: [-1, 0] # Number of samples to use (for debugging purposes), set to -1 to use the entire dataset ([train_size, extra_size] )
-  BATCH_SIZE: 32
-  STRATIFIED: False
-  NUM_EPOCHS: 5
-  LR: 0.001
+  SAMPLE_SIZE: [-1, -1] # Number of samples to use (for debugging purposes), set to -1 to use the entire dataset ([train_size, extra_size] )
+  BATCH_SIZE: 22
+  NUM_EPOCHS: 100
+  LR: 0.0003
   MOM: 0.9
-  SHUFFLE: False
-  WEIGHT_DECAY: 0.005
-  DECAY_STEPS: 500
-  DECAY_RATE: 0.9
+  WEIGHT_DECAY: 0.0005
 
 
 

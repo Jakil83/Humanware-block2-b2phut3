@@ -1,22 +1,20 @@
 from __future__ import print_function
+
+import argparse
+import datetime
 import os
 import sys
-import argparse
-import dateutil.tz
-import datetime
-import numpy as np
-import pprint
-import random
 from shutil import copyfile
+
+import dateutil.tz
 import torch
+
+from models.vgg import VGG
+from trainer.trainer import train_model
 from utils.checkpointer import CheckpointSaver
 from utils.config import cfg_from_file
 from utils.dataloader import prepare_dataloaders
 from utils.misc import mkdir_p, fix_seed
-# from models.baselines import BaselineCNN, ConvNet, BaselineCNNDropout
-from models.vgg import VGG
-# from models.resnet import ResNet18
-from trainer.trainer import train_model
 
 dir_path = (os.path.abspath(os.path.join(os.path.realpath(__file__), './.')))
 sys.path.append(dir_path)
@@ -65,8 +63,7 @@ def parse_args():
                         help='''the name of the checkpoint to resume training from.  
                         If set to None then the training will start from the beginning''')
 
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def load_config(args):
@@ -106,28 +103,26 @@ if __name__ == '__main__':
 
     if args.checkpoint_name:
         checkpoint = CheckpointSaver(args.checkpoint_dir)
-        model = checkpoint.load(args.checkpoint_name)
+
+        # Load model from checkpoint
+        model, cfg = checkpoint.load(args.checkpoint_name)
+
+        # Make results reproducible
+        fix_seed(cfg.SEED)
     else:
 
         # Load the config file
         cfg = load_config(args)
+
+        # Make results reproducible
+        fix_seed(cfg.SEED)
+
+        # Define model architecture
         model = VGG('VGG19', num_classes_length=7, num_classes_digits=10)
-
-    # print("Using the config:")
-    # pprint.pprint(cfg)
-
-    # Make the results reproductible
-    fix_seed(cfg.SEED)
 
     # Prepare data
     (train_loader,
      valid_loader) = prepare_dataloaders(cfg)
-
-    # Define model architecture
-    # baseline_cnn = ConvNet(num_classes_length=7, num_classes_digits=10)
-    # baseline_cnn = BaselineCNN(num_classes_length=7, num_classes_digits=10)
-    # resnet18 = ResNet18(num_classes_length=7, num_classes_digits=10)
-    # baseline_cnn = BaselineCNNDropout(num_classes=7, p=0.5)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("Device used: ", device)

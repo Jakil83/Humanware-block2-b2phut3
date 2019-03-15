@@ -10,13 +10,12 @@ import dateutil.tz
 import skopt
 import torch
 
-# from models.baselines import BaselineCNN, ConvNet, BaselineCNNDropout
 from models.vgg import VGG
 from trainer.trainer import train_model
 from utils.checkpointer import CheckpointSaverCallback
 from utils.config import cfg_from_file
 from utils.dataloader import prepare_dataloaders
-from utils.misc import mkdir_p
+from utils.misc import mkdir_p, fix_seed
 
 dir_path = (os.path.abspath(os.path.join(os.path.realpath(__file__), './.')))
 sys.path.append(dir_path)
@@ -70,13 +69,7 @@ def parse_args():
                         help='''the name of the checkpoint to resume the bayesian optimization from.  
                         If set to None then the bayesian optimization will start from the beginning''')
 
-    # parser.add_argument("--checkpoint_name", type=str,
-    #                     default=None,
-    #                     help='''the name of the checkpoint to resume training from.
-    #                     If set to None then the training will start from the beginning''')
-
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def load_config(args):
@@ -92,7 +85,6 @@ def load_config(args):
 
     now = datetime.datetime.now(dateutil.tz.tzlocal())
     timestamp = now.strftime('%Y_%m_%d_%H_%M_%S')
-    # print('timestamp: {}'.format(timestamp))
 
     cfg.TIMESTAMP = timestamp
     cfg.INPUT_DIR = args.dataset_dir
@@ -105,54 +97,50 @@ def load_config(args):
     mkdir_p(cfg.OUTPUT_DIR)
     copyfile(args.cfg, os.path.join(cfg.OUTPUT_DIR, 'config.yml'))
 
-    # print('Data dir: {}'.format(cfg.INPUT_DIR))
-    # print('Output dir: {}'.format(cfg.OUTPUT_DIR))
-
-    # print('Using config:')
-    # pprint.pprint(cfg)
     return cfg
 
 
 def train_model_opt(parameters):
-    print("Training model with parameters: {}\n\n\n".format(parameters))
+
+    print("Training model with hyper-parameters: {}\n\n\n".format(parameters))
+
     args = parse_args()
 
     # Load the config file
     cfg = load_config(args)
 
-    cfg.TRAIN.LR = parameters[0]
-    cfg.TRAIN.BATCH_SIZE = parameters[1]
+    # Make the results reproducible
+    fix_seed(cfg.SEED)
 
+    cfg.TRAIN.LR = parameters[0]
+    cfg.TRAIN.BATCH_SIZE = int(parameters[1])
+
+    # Preparing data
     (train_loader,
      valid_loader) = prepare_dataloaders(cfg)
 
+    # Define model architecture
     vgg19 = VGG("VGG19", num_classes_length=7, num_classes_digits=10)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("Device used: ", device)
 
-    return -train_model(vgg19,
-                       cfg=cfg,
-                       train_loader=train_loader,
-                       valid_loader=valid_loader,
-                       device=device)
+    # We return negative accuracy since we use a minimizer
+    return -train_model(vgg19, cfg=cfg, train_loader=train_loader, valid_loader=valid_loader, device=device)
 
 
 if __name__ == '__main__':
     args = parse_args()
 
-    # Load the config file
-    # cfg = load_config(args)
-
-    # Make the results reproductible
-    # fix_seed(cfg.SEED)
-
+    # We define the space of our hyper-parameters
     space = [skopt.space.Real(10 ** -5, 10 ** 0, "log-uniform", name='lr'),
              skopt.space.Integer(16, 128, name='batch_size')
              ]
 
     checkpoint_path = os.path.join(args.checkpoint_dir, "bayesian_checkpoint.pkl")
     checkpoint_saver = CheckpointSaverCallback(checkpoint_path, compress=9)
+
+    # Case where we resume tuning from a checkpoint
     if args.bayesian_checkpoint_name:
         res_gp = skopt.load(checkpoint_path)
         print("Resuming from iteration: {}\n\n".format(len(res_gp.x_iters)))

@@ -12,7 +12,6 @@ from torch.utils.data import DataLoader
 from utils.transforms import FirstCrop, Rescale, RandomCrop, ToTensor
 from utils.misc import load_obj
 from utils.boxes import extract_labels_boxes
-from sklearn.model_selection import StratifiedShuffleSplit
 
 
 class SVHNDataset(data.Dataset):
@@ -106,6 +105,7 @@ class SVHNDataset(data.Dataset):
         return sample
 
 
+# A dataset that combines both extra and train subsets
 class FullSVHNDataset(data.Dataset):
 
     def __init__(self, metadata_train, metadata_extra, train_data_dir,
@@ -209,16 +209,12 @@ class FullSVHNDataset(data.Dataset):
 
 
 def prepare_dataloaders(cfg):
-
     # Prepare data
-    dataset_split = cfg.TRAIN.DATASET_SPLIT
     dataset_path = cfg.INPUT_DIR
     metadata_filename = cfg.METADATA_FILENAME
     batch_size = cfg.TRAIN.BATCH_SIZE
     sample_size = cfg.TRAIN.SAMPLE_SIZE
     valid_split = cfg.TRAIN.VALID_SPLIT
-    stratified = cfg.TRAIN.STRATIFIED
-    shuffle = cfg.TRAIN.SHUFFLE
 
     '''
     Utility function to prepare dataloaders for training.
@@ -243,22 +239,12 @@ def prepare_dataloaders(cfg):
 
     Returns
     -------
-    if dataset_split in ['train', 'extra']:
         train_loader: torch.utils.DataLoader
             Dataloader containing training data.
         valid_loader: torch.utils.DataLoader
             Dataloader containing validation data.
 
-    if dataset_split in ['test']:
-        test_loader: torch.utils.DataLoader
-            Dataloader containing test data.
-
-
     '''
-
-    assert dataset_split in ['train', 'test', 'extra', 'train+extra'], "check dataset_split"
-
-    #  dataset_path = datadir / dataset_split
 
     firstcrop = FirstCrop(0.3)
     rescale = Rescale((64, 64))
@@ -273,123 +259,66 @@ def prepare_dataloaders(cfg):
                                     to_tensor,
                                     ])
 
-    if dataset_split in ['train', 'extra']:
+    # index 0 for train subset, 1 for extra subset
+    metadata_train = load_obj(metadata_filename[0])
+    metadata_extra = load_obj(metadata_filename[1])
 
-        metadata = load_obj(metadata_filename[0])
+    train_data_dir = dataset_path[0]
+    extra_data_dir = dataset_path[1]
 
-        dataset = SVHNDataset(metadata,
-                              data_dir=dataset_path[0],
-                              transform=transform)
+    valid_split_train = valid_split[0]
+    valid_split_extra = valid_split[1]
 
-        indices = np.arange(len(metadata))
-        #  indices = np.random.permutation(indices)
+    # Determine class (number of digits) for each image
 
-        # Only use a sample amount of data
-        if sample_size != -1:
-            indices = indices[:sample_size]
+    y_train = []
+    y_extra = []
 
-        train_idx = indices[:round(valid_split * len(indices))]
-        valid_idx = indices[round(valid_split * len(indices)):]
+    for key, value in metadata_train.items():
+        y_train.append(min(len(value['metadata']['label']), 5))
 
-        train_sampler = torch.utils.data.SubsetRandomSampler(train_idx)
-        valid_sampler = torch.utils.data.SubsetRandomSampler(valid_idx)
+    for key, value in metadata_extra.items():
+        y_extra.append(min(len(value['metadata']['label']), 5))
 
-        # Prepare a train and validation dataloader
-        train_loader = DataLoader(dataset,
-                                  batch_size=batch_size,
-                                  shuffle=shuffle,
-                                  num_workers=4,
-                                  sampler=train_sampler)
+    dataset = FullSVHNDataset(metadata_train, metadata_extra, train_data_dir,
+                              extra_data_dir, transform=transform)
 
-        valid_loader = DataLoader(dataset,
-                                  batch_size=batch_size,
-                                  shuffle=False,
-                                  num_workers=4,
-                                  sampler=valid_sampler)
+    indices_train = np.arange(len(metadata_train))
+    indices_extra = np.arange(len(metadata_train), len(metadata_extra) + len(metadata_train))
 
-        return train_loader, valid_loader
+    # Only use a sample amount of data
+    if sample_size[0] != -1:
+        indices_train = indices_train[:sample_size[0]]
 
-    elif dataset_split in ['train+extra']:
+    if sample_size[1] != -1:
+        indices_extra = indices_extra[:sample_size[1]]
 
-        # 0 for train, 1 for extra
-        metadata_train = load_obj(metadata_filename[0])
-        metadata_extra = load_obj(metadata_filename[1])
+    train_idx_train = indices_train[:round(valid_split_train * len(indices_train))]
+    valid_idx_train = indices_train[round(valid_split_train * len(indices_train)):]
 
-        train_data_dir = dataset_path[0]
-        extra_data_dir = dataset_path[1]
+    train_idx_extra = indices_extra[:round(valid_split_extra * len(indices_extra))]
+    valid_idx_extra = indices_extra[round(valid_split_extra * len(indices_extra)):]
 
-        valid_split_train = valid_split[0]
-        valid_split_extra = valid_split[1]
+    train_idx = np.concatenate((train_idx_train, train_idx_extra))
+    valid_idx = np.concatenate((valid_idx_train, valid_idx_extra))
 
-        # Determine class (number of digits) for each image
+    train_sampler = torch.utils.data.SubsetRandomSampler(train_idx)
+    valid_sampler = torch.utils.data.SubsetRandomSampler(valid_idx)
 
-        y_train = []
-        y_extra = []
+    # Prepare a train and validation dataloader
+    train_loader = DataLoader(dataset,
+                              batch_size=batch_size,
+                              shuffle=False,
+                              num_workers=4,
+                              sampler=train_sampler)
 
-        for key, value in metadata_train.items():
-            y_train.append(min(len(value['metadata']['label']), 5))
+    valid_loader = DataLoader(dataset,
+                              batch_size=batch_size,
+                              shuffle=False,
+                              num_workers=4,
+                              sampler=valid_sampler)
 
-        for key, value in metadata_extra.items():
-            y_extra.append(min(len(value['metadata']['label']), 5))
-
-        dataset = FullSVHNDataset(metadata_train, metadata_extra, train_data_dir,
-                                  extra_data_dir, transform=transform)
-
-        indices_train = np.arange(len(metadata_train))
-        indices_extra = np.arange(len(metadata_train), len(metadata_extra) + len(metadata_train))
-
-        # Only use a sample amount of data
-        if sample_size[0] != -1:
-            indices_train = indices_train[:sample_size[0]]
-            y_train = y_train[:sample_size[0]]
-
-        if sample_size[1] != -1:
-            indices_extra = indices_extra[:sample_size[1]]
-            y_extra = y_extra[:sample_size[1]]
-
-        # If we want balanced splits
-        if stratified:
-
-            train_splitter = StratifiedShuffleSplit(n_splits=1, test_size=None, train_size=valid_split_train)
-
-            for train_idx, valid_idx in train_splitter.split(indices_train, y_train):
-                train_idx_train = indices_train[train_idx]
-                valid_idx_train = indices_train[valid_idx]
-
-            extra_splitter = StratifiedShuffleSplit(n_splits=1, test_size=None, train_size=valid_split_extra)
-
-            for train_idx, valid_idx in extra_splitter.split(indices_extra, y_extra):
-                train_idx_extra = indices_extra[train_idx]
-                valid_idx_extra = indices_extra[valid_idx]
-
-        else:
-
-            train_idx_train = indices_train[:round(valid_split_train * len(indices_train))]
-            valid_idx_train = indices_train[round(valid_split_train * len(indices_train)):]
-
-            train_idx_extra = indices_extra[:round(valid_split_extra * len(indices_extra))]
-            valid_idx_extra = indices_extra[round(valid_split_extra * len(indices_extra)):]
-
-        train_idx = np.concatenate((train_idx_train, train_idx_extra))
-        valid_idx = np.concatenate((valid_idx_train, valid_idx_extra))
-
-        train_sampler = torch.utils.data.SubsetRandomSampler(train_idx)
-        valid_sampler = torch.utils.data.SubsetRandomSampler(valid_idx)
-
-        # Prepare a train and validation dataloader
-        train_loader = DataLoader(dataset,
-                                  batch_size=batch_size,
-                                  shuffle=shuffle,
-                                  num_workers=4,
-                                  sampler=train_sampler)
-
-        valid_loader = DataLoader(dataset,
-                                  batch_size=batch_size,
-                                  shuffle=False,
-                                  num_workers=4,
-                                  sampler=valid_sampler)
-
-        return train_loader, valid_loader
+    return train_loader, valid_loader
 
 
 def prepare_test_dataloader(dataset_path, metadata_filename, batch_size, sample_size):
@@ -413,7 +342,6 @@ def prepare_test_dataloader(dataset_path, metadata_filename, batch_size, sample_
                           transform=transform)
 
     indices = np.arange(len(metadata))
-    #  indices = np.random.permutation(indices)
 
     # Only use a sample amount of data
     if sample_size != -1:

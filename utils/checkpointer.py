@@ -52,9 +52,9 @@ class CheckpointSaver:
 
         model = torch.load(model_path)
 
-        cfg_from_file(config_path)
+        cfg = cfg_from_file(config_path)
 
-        return model
+        return model, cfg
 
 
 class CheckpointSaverCallback(object):

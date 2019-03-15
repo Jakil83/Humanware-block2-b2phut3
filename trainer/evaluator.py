@@ -29,8 +29,6 @@ class Evaluator(object):
 
         valid_detailed_accuracy = [None] * 6
 
-        # Set model to evaluate mode
-        model.eval()
         # Iterate over valid data
         print("\n\nIterating over validation data...")
         for i, batch in enumerate(tqdm(_loader)):
@@ -46,7 +44,7 @@ class Evaluator(object):
             target_digits = targets[:, 1:].long()
             target_digits = target_digits.to(device)
 
-            # Forward
+            # Set model to evaluate mode and do a forward pass
             outputs = model.eval()(inputs)
 
             total_loss = multi_loss(outputs, target_ndigits, target_digits)

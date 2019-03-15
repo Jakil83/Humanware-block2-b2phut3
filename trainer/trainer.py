@@ -5,8 +5,7 @@ import numpy as np
 import time
 import os
 import torch
-from tqdm import tqdm, tqdm_notebook
-from torchvision.utils import make_grid
+from tqdm import tqdm
 from utils.checkpointer import CheckpointSaver
 from trainer.evaluator import Evaluator
 from tensorboardX import SummaryWriter
@@ -23,15 +22,6 @@ def multi_loss(outputs, target_ndigits, target_digits):
     loss_digit5 = loss_function(outputs[5], target_digits[:, 4])
 
     return loss_seqlen + loss_digit1 + loss_digit2 + loss_digit3 + loss_digit4 + loss_digit5
-
-
-def to_np(x):
-    """
-    https://github.com/yunjey/pytorch-tutorial/blob/master/tutorials/04-utils/tensorboard/main.py#L20
-    :param x:
-    :return:
-    """
-    return x.data.cpu().numpy()
 
 
 def train_model(model, train_loader, valid_loader, device, cfg):
