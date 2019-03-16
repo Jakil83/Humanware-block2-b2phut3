@@ -127,6 +127,7 @@ if __name__ == '__main__':
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("Device used: ", device)
 
+    # Start model training
     train_model(model,
                 cfg=cfg,
                 train_loader=train_loader,

@@ -39,12 +39,12 @@ def parse_args():
 
     parser.add_argument("--metadata_filename", nargs='+', type=str,
                         default=['data/SVHN/train_metadata.pkl', 'data/SVHN/extra_metadata.pkl'],
-                        help='''metadata_filename will be the absolute paths to the metadata files 
+                        help='''metadata_filename will be the absolute paths to the metadata files
                         of the data (order is [train, extra] if both are provided).''')
 
     parser.add_argument("--checkpoint_dir", type=str,
                         default="checkpoints",
-                        help='''checkpoint_dir will be the absolute path to the directory used 
+                        help='''checkpoint_dir will be the absolute path to the directory used
                         for checkpointing''')
 
     parser.add_argument("--dataset_dir", nargs='+', type=str,
@@ -66,7 +66,7 @@ def parse_args():
 
     parser.add_argument("--bayesian_checkpoint_name", type=str,
                         default=None,
-                        help='''the name of the checkpoint to resume the bayesian optimization from.  
+                        help='''the name of the checkpoint to resume the bayesian optimization from.
                         If set to None then the bayesian optimization will start from the beginning''')
 
     return parser.parse_args()
@@ -125,7 +125,7 @@ def train_model_opt(parameters):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("Device used: ", device)
 
-    # We return negative accuracy since we use a minimizer
+    # We return negative accuracy since we have minimization function (gp_minimize)
     return -train_model(vgg19, cfg=cfg, train_loader=train_loader, valid_loader=valid_loader, device=device)
 
 

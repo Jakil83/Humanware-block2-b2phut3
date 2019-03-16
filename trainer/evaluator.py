@@ -15,6 +15,7 @@ class Evaluator(object):
     @staticmethod
     def evaluate(epoch, _loader, model, multi_loss, device):
 
+        # TensorBoardX writers to record training events
         writer4 = SummaryWriter('run/valid_loss')
         writer5 = SummaryWriter('run/valid_acc')
 
@@ -45,14 +46,17 @@ class Evaluator(object):
             target_digits = target_digits.to(device)
 
             # Set model to evaluate mode and do a forward pass
+            # outputs[0] is for length. outputs[1-5] for digits.
             outputs = model.eval()(inputs)
 
+            # The combined loss for multi-task learning
             total_loss = multi_loss(outputs, target_ndigits, target_digits)
 
             # Statistics
             valid_loss += total_loss.item()
             valid_n_iter += 1
 
+            # Get the predicted length of each sequence
             _, predicted_num_digits = torch.max(outputs[0].data, 1)
 
             predicted_digits_data = []
@@ -60,9 +64,13 @@ class Evaluator(object):
             for j in range(5):
                 predicted_digits_data.append(outputs[j + 1].data)
 
+            # Stack the 10 softmax probabilities for each position, in a single array
             predicted_digits_data = torch.stack(predicted_digits_data, 1)
+
+            # Get the argmax of the probabilities for each of 5 digits in all the sequences
             _, predicted_digits = torch.max(predicted_digits_data, 2)
 
+            # calculating sequence accuracy and per task (length + individual digits)
             for k in range(predicted_digits.size(0)):
                 target_length = target_ndigits[k].item()
 
@@ -88,13 +96,14 @@ class Evaluator(object):
 
         valid_detailed_accuracy[0] = valid_correct_length / valid_n_samples
 
+        # Displaying the validation accuracy per task
         for i in range(1, 6):
-            if valid_digit_seq[i-1] != 0:
-                valid_detailed_accuracy[i] = "{:.4f}".format((valid_correct_digits[i-1] / valid_digit_seq[i-1]))
+            if valid_digit_seq[i - 1] != 0:
+                valid_detailed_accuracy[i] = "{:.4f}".format((valid_correct_digits[i - 1] / valid_digit_seq[i - 1]))
             else:
                 valid_detailed_accuracy[i] = "No examples of length {} digit(s) or more.".format(i)
 
-        # adding log
+        # Saving TensorBoardX events
         writer4.add_scalar('Loss', valid_avg_loss, epoch + 1)
         writer5.add_scalar('Accuracy', valid_accuracy, epoch + 1)
         writer5.add_scalar('Length Accuracy', valid_detailed_accuracy[0], epoch + 1)

@@ -11,7 +11,9 @@ from trainer.evaluator import Evaluator
 from tensorboardX import SummaryWriter
 
 
+# The combined loss for multi-task learning
 def multi_loss(outputs, target_ndigits, target_digits):
+    # We ignore the examples where the target is -1 for a given task.
     loss_function = torch.nn.CrossEntropyLoss(ignore_index=-1)
 
     loss_seqlen = torch.nn.CrossEntropyLoss()(outputs[0], target_ndigits)
@@ -34,7 +36,7 @@ def train_model(model, train_loader, valid_loader, device, cfg):
     momentum = cfg.TRAIN.MOM
     weight_decay = cfg.TRAIN.WEIGHT_DECAY
 
-    '''
+    """
     Training loop.
 
     Parameters
@@ -54,18 +56,20 @@ def train_model(model, train_loader, valid_loader, device, cfg):
     output_dir : str
         path to the directory where to save the model.
 
-    '''
+    """
 
     checkpoint = CheckpointSaver(checkpoint_dir)
 
+    # Directory for TensorBoardX events
     since = time.time()
     dir_name = 'run'
     if not os.path.exists(dir_name):
         os.mkdir(dir_name)
-        print("Directory", dir_name,  "created ")
+        print("Directory", dir_name, "created ")
     else:
-        print("Directory", dir_name,  "already exists")
+        print("Directory", dir_name, "already exists")
 
+    # TensorBoardX writers to record training events
     writer1 = SummaryWriter('run/train_loss')
     writer2 = SummaryWriter('run/train_acc')
     writer3 = SummaryWriter('run/Model_arch')
@@ -76,8 +80,7 @@ def train_model(model, train_loader, valid_loader, device, cfg):
     model = model.to(device)
 
     optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.1, patience=5,
-                                                           verbose=True, min_lr=1e-5)
+
     print("# Start training #")
     for epoch in range(current_epoch, num_epochs):
 
@@ -111,10 +114,11 @@ def train_model(model, train_loader, valid_loader, device, cfg):
             # Zero the gradient buffer
             optimizer.zero_grad()
 
-            # Forward
+            # Set model to train mode and do a forward pass
+            # outputs[0] is for length. outputs[1-5] for digits.
             outputs = model.train()(inputs)
 
-            # Multi-task learning loss
+            # The combined loss for multi-task learning
             total_loss = multi_loss(outputs, target_ndigits, target_digits)
 
             # Backward
@@ -127,6 +131,7 @@ def train_model(model, train_loader, valid_loader, device, cfg):
             train_loss += total_loss.item()
             train_n_iter += 1
 
+            # Get the predicted length of each sequence
             _, predicted_num_digits = torch.max(outputs[0].data, 1)
 
             predicted_digits_data = []
@@ -134,9 +139,13 @@ def train_model(model, train_loader, valid_loader, device, cfg):
             for j in range(5):
                 predicted_digits_data.append(outputs[j + 1].data)
 
+            # Stack the 10 softmax probabilities for each position, in a single array
             predicted_digits_data = torch.stack(predicted_digits_data, 1)
+
+            # Get the argmax of the probabilities for each of 5 digits in all the sequences
             _, predicted_digits = torch.max(predicted_digits_data, 2)
 
+            # calculating sequence accuracy and per task (length + individual digits)
             for k in range(predicted_digits.size(0)):
                 target_length = target_ndigits[k].item()
 
@@ -167,10 +176,9 @@ def train_model(model, train_loader, valid_loader, device, cfg):
 
         for i in range(5):
             if train_digit_seq[i] != 0:
-                train_detailed_accuracy[i+1] = train_correct_digits[i] / train_digit_seq[i]
+                train_detailed_accuracy[i + 1] = train_correct_digits[i] / train_digit_seq[i]
 
-        # adding log
-
+        # Saving TensorBoardX events
         writer1.add_scalar('Loss', train_avg_loss, epoch + 1)
         writer2.add_scalar('Accuracy', train_accuracy, epoch + 1)
         writer2.add_scalar('Length Accuracy', train_detailed_accuracy[0], epoch + 1)
@@ -180,21 +188,23 @@ def train_model(model, train_loader, valid_loader, device, cfg):
                 writer2.add_scalar('Digit {} Accuracy'.format(k), train_detailed_accuracy[k],
                                    epoch + 1)
 
+        # Evaluating the model on the validation set
         valid_avg_loss, valid_accuracy, valid_detailed_accuracy = \
             Evaluator().evaluate(epoch, valid_loader, model, multi_loss, device)
 
-        scheduler.step(valid_accuracy)
-
+        # Saving our best performing model so far
         if valid_accuracy > valid_best_accuracy:
             valid_best_accuracy = valid_accuracy
             best_model = copy.deepcopy(model)
 
+        # Periodic checkpoint for stop/resume training procedure
         if epoch % 5 == 0:
             checkpoint.save(model, epoch, cfg=cfg)
 
         # Add the model graph
         writer3.add_graph(model, inputs)
 
+        # Displaying the training metrics after each epoch
         print('\nEpoch: {}/{}'.format(epoch + 1, num_epochs))
         print('\tTrain Loss: {:.4f}'.format(train_avg_loss))
         print('\tTrain Accuracy: {:.4f}'.format(train_accuracy))
@@ -228,5 +238,5 @@ def train_model(model, train_loader, valid_loader, device, cfg):
     torch.save(best_model, model_filename)
     print('Best model saved to :', model_filename)
 
-    # return score for bayesian optimization
+    # return score for Bayesian optimization
     return valid_best_accuracy

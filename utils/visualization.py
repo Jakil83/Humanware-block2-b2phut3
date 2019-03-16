@@ -25,7 +25,8 @@ def visualize_sample(sample, outer_bbox=None):
     plt.axis('off')
     plt.imshow(img)
 
-    n = len(labels)  # Number of digits in image
+    # Number of digits in image
+    n = len(labels)
 
     # Show individual boxes and labels
     for i in range(n):

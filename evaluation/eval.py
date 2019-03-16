@@ -115,9 +115,6 @@ def eval_model(dataset_dir, metadata_filename, model_filename,
 
         inputs = inputs.to(device)
 
-        # target_ndigits = targets[:, 0].long()
-        # target_ndigits = target_ndigits.to(device)
-
         target_digits = targets[:, 1:].long()
         target_digits = format_digits(target_digits)
 
@@ -183,10 +180,10 @@ if __name__ == "__main__":
 
     '''' MODIFY THIS SECTION '''
     # Put your group name here
-    group_name = "b1phut_baseline"
+    group_name = "b2phut3"
 
     # model_filename = '/rap/jvb-000-aa/COURS2019/etudiants/submissions/b1phut_baseline/model/vgg19_momentum.pth'
-    model_filename = "/home/user26/blk2_humanware/checkpoints/checkpoint_epoch20.pth"
+    model_filename = "/rap/jvb-000-aa/COURS2019/etudiants/submissions/b2phut3/model/best_model.pth"
     # model_filename should be the absolute path on shared disk to your
     # best model. You need to ensure that they are available to evaluators on
     # Helios.

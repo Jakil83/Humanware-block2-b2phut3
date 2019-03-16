@@ -115,7 +115,7 @@ class FullSVHNDataset(data.Dataset):
 
         Parameters
         ----------
-        metadata : dict
+        metadata_train/metadata_extra : dict
         Each key in metadata will contain a filename and all associated
         metadata. The filename is with respect to the directory it's in,
         and metadata contains four 5 fields:
@@ -136,8 +136,8 @@ class FullSVHNDataset(data.Dataset):
         'top': [29, 25],
         'width': [23, 26]}}, ...
 
-        data_dir : str
-            Directory with all the images.
+        train_data_dir/extra_data_dir : str
+            Directory with all the images in train/extra datasets.
         transform : callable, optional
             Optional transform to be applied on a sample.
 
@@ -209,20 +209,18 @@ class FullSVHNDataset(data.Dataset):
 
 
 def prepare_dataloaders(cfg):
-    # Prepare data
+
     dataset_path = cfg.INPUT_DIR
     metadata_filename = cfg.METADATA_FILENAME
     batch_size = cfg.TRAIN.BATCH_SIZE
     sample_size = cfg.TRAIN.SAMPLE_SIZE
     valid_split = cfg.TRAIN.VALID_SPLIT
 
-    '''
+    """
     Utility function to prepare dataloaders for training.
 
-    Parameters
-    ----------
-    dataset_split : str
-        Any of 'train', 'extra', 'test'.
+    Parameters of the configuration (cfg)
+    -------------------------------------
     dataset_path : str
         Absolute path to the dataset. (i.e. .../data/SVHN/train')
     metadata_filename : str
@@ -235,8 +233,7 @@ def prepare_dataloaders(cfg):
     valid_split : float
         Returns a validation split of %size; valid_split*100,
         valid_split should be in range [0,1].
-    stratified : Whether we use sklearn startified splits or not.
-
+    
     Returns
     -------
         train_loader: torch.utils.DataLoader
@@ -244,7 +241,7 @@ def prepare_dataloaders(cfg):
         valid_loader: torch.utils.DataLoader
             Dataloader containing validation data.
 
-    '''
+    """
 
     firstcrop = FirstCrop(0.3)
     rescale = Rescale((64, 64))
@@ -269,17 +266,7 @@ def prepare_dataloaders(cfg):
     valid_split_train = valid_split[0]
     valid_split_extra = valid_split[1]
 
-    # Determine class (number of digits) for each image
-
-    y_train = []
-    y_extra = []
-
-    for key, value in metadata_train.items():
-        y_train.append(min(len(value['metadata']['label']), 5))
-
-    for key, value in metadata_extra.items():
-        y_extra.append(min(len(value['metadata']['label']), 5))
-
+    # Initialize the combined Dataset
     dataset = FullSVHNDataset(metadata_train, metadata_extra, train_data_dir,
                               extra_data_dir, transform=transform)
 
@@ -293,15 +280,19 @@ def prepare_dataloaders(cfg):
     if sample_size[1] != -1:
         indices_extra = indices_extra[:sample_size[1]]
 
+    # Select the indices to use for the train/valid split from the 'train' subset
     train_idx_train = indices_train[:round(valid_split_train * len(indices_train))]
     valid_idx_train = indices_train[round(valid_split_train * len(indices_train)):]
 
+    # Select the indices to use for the train/valid split from the 'extra' subset
     train_idx_extra = indices_extra[:round(valid_split_extra * len(indices_extra))]
     valid_idx_extra = indices_extra[round(valid_split_extra * len(indices_extra)):]
 
+    # Combine indices from 'train' and 'extra' as one single train/validation split
     train_idx = np.concatenate((train_idx_train, train_idx_extra))
     valid_idx = np.concatenate((valid_idx_train, valid_idx_extra))
 
+    # Define the data samplers
     train_sampler = torch.utils.data.SubsetRandomSampler(train_idx)
     valid_sampler = torch.utils.data.SubsetRandomSampler(valid_idx)
 
@@ -322,6 +313,31 @@ def prepare_dataloaders(cfg):
 
 
 def prepare_test_dataloader(dataset_path, metadata_filename, batch_size, sample_size):
+    """
+    Utility function to prepare dataloaders for testing.
+
+    Parameters of the configuration (cfg)
+    -------------------------------------
+    dataset_path : str
+        Absolute path to the test dataset. (i.e. .../data/SVHN/test')
+    metadata_filename : str
+        Absolute path to the metadata pickle file.
+    batch_size : int
+        Mini-batch size.
+    sample_size : int
+        Number of elements to use as sample size,
+        for debugging purposes only. If -1, use all samples.
+    valid_split : float
+        Returns a validation split of %size; valid_split*100,
+        valid_split should be in range [0,1].
+
+    Returns
+    -------
+        test_loader: torch.utils.DataLoader
+            Dataloader containing test data.
+
+    """
+
     firstcrop = FirstCrop(0.3)
     rescale = Rescale((64, 64))
     random_crop = RandomCrop((54, 54))
@@ -335,8 +351,10 @@ def prepare_test_dataloader(dataset_path, metadata_filename, batch_size, sample_
                                     to_tensor,
                                     ])
 
+    # Load metadata file
     metadata = load_obj(metadata_filename)
 
+    # Initialize Dataset
     dataset = SVHNDataset(metadata,
                           data_dir=dataset_path,
                           transform=transform)
